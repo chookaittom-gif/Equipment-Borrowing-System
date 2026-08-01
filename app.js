@@ -367,8 +367,6 @@ function getSampleEquipmentImage(item) {
   if (!item) return '';
   const formatted1 = formatImageUrl(item.image1);
   if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
-  const formatted2 = formatImageUrl(item.image2);
-  if (formatted2 && formatted2.length > 5 && !formatted2.includes('fallbackSvg')) return formatted2;
 
   const name = (item.name || '').toLowerCase();
   const cat = (item.category || '').toLowerCase();
@@ -452,7 +450,10 @@ function renderEquipmentGrid() {
     return `
       <div class="equipment-card">
         <div class="image-gallery">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" title="ดูภาพอุปกรณ์ขนาดเต็ม" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
+          <button type="button" class="equipment-image-expand" data-src="${escapeHtml(imgUrl)}" onclick="zoomImage(this.dataset.src)" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม" title="ดูภาพอุปกรณ์ขนาดเต็ม">
+            <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
+          </button>
           <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
