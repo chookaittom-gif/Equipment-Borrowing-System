@@ -22,8 +22,6 @@ const LEGACY_EQUIPMENT_CATEGORY_MAP = {
   General: 'general'
 };
 const IMAGE_FOLDER_ID = '1O-7Z0PNoCMz7OPi9c35gPCN3S1mV-0G-';
-const TELEGRAM_BOT_TOKEN = '8657585379:AAFTkj81WMXpqCTcHTRnJly49RKybsLvrTE';
-const TELEGRAM_CHAT_ID = '-5183472427';
 
 // ==========================================
 // API Router & Response Wrappers
@@ -575,6 +573,47 @@ function generateQRCode(equipId, equipName) {
   return `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(borrowUrl)}&choe=UTF-8`;
 }
 
+/** Run once from GAS editor: Extensions → Apps Script → regenerateAllQrCodes */
+function regenerateAllQrCodes() {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const equipSheet = ss.getSheetByName(SHEET_EQUIPMENT);
+    if (!equipSheet || equipSheet.getLastRow() <= 1) {
+      return { updated: 0, skipped: 0, message: 'ไม่พบรายการอุปกรณ์' };
+    }
+
+    const data = equipSheet.getDataRange().getValues();
+    const qrValues = [];
+    let updated = 0;
+    let skipped = 0;
+
+    for (let i = 1; i < data.length; i++) {
+      const equipId = String(data[i][0] || '').trim();
+      const equipName = String(data[i][1] || '').trim();
+      if (!equipId || !equipName) {
+        qrValues.push(['']);
+        skipped++;
+        continue;
+      }
+      qrValues.push([generateQRCode(equipId, equipName)]);
+      updated++;
+    }
+
+    if (qrValues.length > 0) {
+      equipSheet.getRange(2, 10, qrValues.length, 1).setValues(qrValues);
+    }
+
+    const summary = { updated: updated, skipped: skipped, message: 'อัปเดต QR Code เรียบร้อย' };
+    Logger.log('regenerateAllQrCodes: ' + JSON.stringify(summary));
+    return summary;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function uploadImageToDrive(base64Data, fileName) {
   try {
     if (!base64Data || !base64Data.startsWith('data:image')) {
@@ -1075,6 +1114,30 @@ function saveContactForm(data) {
   }
 }
 
+function getTelegramConfig() {
+  const props = PropertiesService.getScriptProperties();
+  const botToken = String(props.getProperty('TELEGRAM_BOT_TOKEN') || '').trim();
+  const chatId = String(props.getProperty('TELEGRAM_CHAT_ID') || '').trim();
+  if (!botToken || !chatId) return null;
+  return { botToken: botToken, chatId: chatId };
+}
+
+function sendTelegramMessage(message) {
+  const config = getTelegramConfig();
+  if (!config) {
+    Logger.log('Telegram skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set in Script Properties');
+    return;
+  }
+
+  const url = 'https://api.telegram.org/bot' + config.botToken + '/sendMessage';
+  UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({ chat_id: config.chatId, text: message }),
+    muteHttpExceptions: true
+  });
+}
+
 function sendBorrowTelegramNotification(form, transId) {
   let itemList = '';
   if (Array.isArray(form.equipName)) {
@@ -1105,13 +1168,7 @@ ${itemList}
 ${form.reason || '-'}
 📌 สถานะ: รออนุมัติ`;
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-    muteHttpExceptions: true
-  });
+  sendTelegramMessage(message);
 }
 
 function sendReturnTelegramNotification(transId, borrowerEmail, equipName, qty) {
@@ -1123,13 +1180,7 @@ function sendReturnTelegramNotification(transId, borrowerEmail, equipName, qty) 
 📦 อุปกรณ์ที่คืน: ${equipName} (${qty} ชิ้น)
 ⏰ วันที่-เวลาที่คืนจริง: ${formatThaiDate(new Date(), true)}`;
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-    muteHttpExceptions: true
-  });
+  sendTelegramMessage(message);
 }
 
 function sendTelegramNotification(data) {
@@ -1144,13 +1195,7 @@ function sendTelegramNotification(data) {
 💬 ข้อความ:
 ${data.message}`;
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-    muteHttpExceptions: true
-  });
+  sendTelegramMessage(message);
 }
 
 function sendApprovalTelegramNotification(transId, borrowerName, borrowerEmail, equipNames, qtys) {
@@ -1172,13 +1217,7 @@ function sendApprovalTelegramNotification(transId, borrowerName, borrowerEmail, 
 ${itemList}
 📌 สถานะ: อนุมัติแล้ว (กำลังยืม)`;
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-    muteHttpExceptions: true
-  });
+  sendTelegramMessage(message);
 }
 
 function sendRejectionTelegramNotification(transId, borrowerName, borrowerEmail, equipNames, qtys, reason) {
@@ -1201,13 +1240,7 @@ ${itemList}
 📝 เหตุผลไม่อนุมัติ: ${reason || '-'}
 📌 สถานะ: ไม่อนุมัติ`;
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
-    muteHttpExceptions: true
-  });
+  sendTelegramMessage(message);
 }
 
 function sendApprovalEmail(email, borrowerName, transId, equipNames, qtys) {
