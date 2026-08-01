@@ -181,6 +181,20 @@ function formatThaiDate(dateInput, includeTime = false) {
   return `${day}/${month}/${year}`;
 }
 
+/** Normalize Thai date strings so "2/8/2569" and "02/08/2569" compare equal. */
+function normalizeThaiDateKey(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === '-') return '';
+
+  const dateOnly = raw.split(/\s+/)[0];
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateOnly)) {
+    const parts = dateOnly.split('/');
+    return `${String(parts[0]).padStart(2, '0')}/${String(parts[1]).padStart(2, '0')}/${parts[2]}`;
+  }
+
+  return formatThaiDate(value);
+}
+
 function toJavaScriptString(value) {
   return JSON.stringify(String(value === null || value === undefined ? '' : value))
     .replace(/</g, '\\u003c')
@@ -1886,20 +1900,38 @@ function renderAdminReports() {
 }
 
 function renderBorrowChart() {
-  const ctx = document.getElementById('borrowChart')?.getContext('2d');
-  if (!ctx) return;
+  const container = document.getElementById('chart-container');
+  if (!container) return;
 
-  if (borrowChart) borrowChart.destroy();
+  if (borrowChart) {
+    borrowChart.destroy();
+    borrowChart = null;
+  }
 
   const days = [];
   const counts = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = formatThaiDate(d);
-    days.push(dateStr);
-    counts.push(transactionData.filter(t => t.dateBorrow === dateStr).length);
+    const dateKey = normalizeThaiDateKey(formatThaiDate(d));
+    days.push(dateKey);
+    counts.push(transactionData.filter(t => normalizeThaiDateKey(t.dateBorrow) === dateKey).length);
   }
+
+  const totalInWindow = counts.reduce((sum, n) => sum + n, 0);
+  if (totalInWindow === 0) {
+    container.innerHTML = `
+      <div class="chart-empty-state" role="status">
+        <i class="fas fa-chart-column chart-empty-icon" aria-hidden="true"></i>
+        <p class="chart-empty-title">ยังไม่มีการยืมใน 7 วันล่าสุด</p>
+        <p class="chart-empty-hint">เมื่อมีการยืมในช่วงนี้ กราฟแท่งจะแสดงจำนวนรายการรายวัน</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '<canvas id="borrowChart"></canvas>';
+  const ctx = document.getElementById('borrowChart')?.getContext('2d');
+  if (!ctx) return;
 
   borrowChart = new Chart(ctx, {
     type: 'bar',
