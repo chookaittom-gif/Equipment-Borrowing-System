@@ -817,7 +817,7 @@ function searchHistory() {
   tbody.innerHTML = matched.map(item => {
     const statusClass = item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending';
     const sigCell = item.signatureUrl
-      ? `<button type="button" class="signature-button" onclick="showSignatureDetail('${item.transId}', '${escapeHtml(item.borrowerName)}', '${item.dateBorrow}', '${item.signatureUrl}')"><img class="signature" src="${escapeHtml(item.signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(item.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(item.signatureUrl)}" alt="ลายเซ็น"></button>`
       : '-';
 
     return `
@@ -833,11 +833,28 @@ function searchHistory() {
   }).join('');
 }
 
+function showSignatureModalFromData(btn) {
+  if (!btn) return;
+  const transId = btn.getAttribute('data-trans-id') || '';
+  const borrower = btn.getAttribute('data-borrower') || '';
+  const date = btn.getAttribute('data-date') || '';
+  const sigUrl = btn.getAttribute('data-sig-url') || '';
+  showSignatureDetail(transId, borrower, date, sigUrl);
+}
+
 function showSignatureDetail(transId, borrower, date, sigUrl) {
-  document.getElementById('sigModalTransId').textContent = transId;
-  document.getElementById('sigModalBorrower').textContent = borrower;
-  document.getElementById('sigModalDate').textContent = date;
-  document.getElementById('sigModalImg').src = sigUrl;
+  const transEl = document.getElementById('sigModalTransId');
+  const borrowerEl = document.getElementById('sigModalBorrower');
+  const dateEl = document.getElementById('sigModalDate');
+  const imgEl = document.getElementById('sigModalImg');
+
+  if (transEl) transEl.textContent = transId || '-';
+  if (borrowerEl) borrowerEl.textContent = borrower || '-';
+  if (dateEl) dateEl.textContent = date || '-';
+  if (imgEl) {
+    imgEl.src = sigUrl || '';
+    imgEl.alt = borrower ? `ลายเซ็นของ ${borrower}` : 'ลายเซ็น';
+  }
   document.getElementById('signatureModal')?.classList.remove('hidden');
 }
 
@@ -1043,7 +1060,7 @@ function renderAdminTransactionsTable() {
 
   tbody.innerHTML = pageItems.map(t => {
     const sigCell = t.signatureUrl
-      ? `<button type="button" class="signature-button" onclick="showSignatureDetail('${t.transId}', '${escapeHtml(t.borrowerName)}', '${t.dateBorrow}', '${t.signatureUrl}')"><img class="signature" src="${escapeHtml(t.signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(t.transId)}" data-borrower="${escapeHtml(t.borrowerName)}" data-date="${escapeHtml(t.dateBorrow)}" data-sig-url="${escapeHtml(t.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(t.signatureUrl)}" alt="ลายเซ็น"></button>`
       : '-';
 
     let actionBtns = '';
@@ -1710,7 +1727,7 @@ function renderReportContent(report) {
   const rows = transactions.map((item, index) => {
     const signatureUrl = String(item.signatureUrl || '').trim();
     const signatureCell = signatureUrl
-      ? `<button type="button" class="signature-button" onclick='showSignatureDetail(${toJavaScriptString(item.transId)}, ${toJavaScriptString(item.borrowerName)}, ${toJavaScriptString(item.dateBorrow)}, ${toJavaScriptString(signatureUrl)})' aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็น"></button>`
       : '-';
 
     return `
