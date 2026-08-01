@@ -423,8 +423,8 @@ function renderEquipmentGrid() {
       <div class="equipment-card">
         <div class="image-gallery">
           <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
-          <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')">
-            <i class="fa-solid fa-qrcode text-sky-700 text-xl"></i>
+          <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
+            <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
         </div>
         <div class="p-5 equipment-card-content">
@@ -488,22 +488,49 @@ function closeImageZoom() {
   document.getElementById('image-zoom-modal')?.classList.remove('show');
 }
 
+function normalizeQrOutput(container, size) {
+  if (!container) return;
+  const img = container.querySelector(':scope > img');
+  const canvas = container.querySelector(':scope > canvas');
+  const table = container.querySelector(':scope > table');
+  const target = img || canvas || table;
+  if (!target) return;
+
+  if (canvas && img) {
+    canvas.classList.add('is-qr-hidden');
+    canvas.style.display = 'none';
+  }
+
+  target.style.width = `${size}px`;
+  target.style.height = `${size}px`;
+  target.style.aspectRatio = '1 / 1';
+  target.style.objectFit = 'contain';
+  target.style.display = 'block';
+  target.style.margin = '0';
+  if (target.tagName === 'CANVAS' || target.tagName === 'IMG') {
+    target.setAttribute('width', String(size));
+    target.setAttribute('height', String(size));
+  }
+}
+
 function showQRCode(id, name) {
   const container = document.getElementById('qr-canvas-container');
   const nameEl = document.getElementById('qr-modal-name');
   const modal = document.getElementById('qr-modal');
+  const qrSize = 200;
 
   if (container) {
     container.innerHTML = '';
     const borrowUrl = `${window.location.origin}${window.location.pathname}?action=borrow&id=${encodeURIComponent(id)}`;
     new QRCode(container, {
       text: borrowUrl,
-      width: 200,
-      height: 200,
+      width: qrSize,
+      height: qrSize,
       colorDark: "#000000",
       colorLight: "#ffffff",
       correctLevel: typeof QRCode !== 'undefined' && QRCode.CorrectLevel ? QRCode.CorrectLevel.H : 2
     });
+    normalizeQrOutput(container, qrSize);
   }
   if (nameEl) nameEl.textContent = `${id} - ${name}`;
   if (modal) modal.classList.add('show');
