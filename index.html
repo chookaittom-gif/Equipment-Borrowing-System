@@ -271,8 +271,8 @@
           <div class="menu-item" id="menu-item-users" onclick="showAdminSection('users', this)">
             <i class="fas fa-users-cog"></i><span>จัดการผู้ใช้งาน</span>
           </div>
-          <div class="menu-item" onclick="logoutAdmin()">
-            <i class="fas fa-sign-out-alt"></i><span>ออกจากระบบ</span>
+          <div class="menu-item menu-item-logout" id="menu-item-logout" onclick="openLogoutConfirmModal()">
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i><span>ออกจากระบบ</span>
           </div>
         </nav>
       </aside>
@@ -593,6 +593,28 @@
     <div class="image-zoom-content">
       <img id="zoomed-image" src="" alt="">
       <p id="imageZoomCaption" class="image-zoom-caption"></p>
+    </div>
+  </div>
+
+  <!-- Logout Confirm Modal -->
+  <div id="logoutConfirmModal" class="logout-confirm-modal" hidden role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle" onclick="if(event.target===this) closeLogoutConfirmModal()">
+    <div class="logout-confirm-dialog">
+      <div class="logout-confirm-header">
+        <div class="logout-confirm-icon" aria-hidden="true">
+          <i class="fas fa-sign-out-alt"></i>
+        </div>
+        <div class="logout-confirm-heading">
+          <h2 id="logoutConfirmTitle" class="logout-confirm-title">ออกจากระบบ?</h2>
+          <p class="logout-confirm-meta">บัญชี: <span id="logoutConfirmUserName">ผู้ดูแลระบบ</span></p>
+        </div>
+      </div>
+      <p class="logout-confirm-body">การออกจากระบบจะสิ้นสุดเซสชันผู้ดูแล คุณต้องเข้าสู่ระบบใหม่เพื่อจัดการอุปกรณ์และรายการยืม</p>
+      <div class="logout-confirm-actions">
+        <button type="button" class="logout-confirm-btn logout-confirm-btn-cancel" onclick="closeLogoutConfirmModal()">อยู่ต่อ</button>
+        <button type="button" class="logout-confirm-btn logout-confirm-btn-danger" onclick="confirmLogoutAdmin()">
+          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>ออกจากระบบ
+        </button>
+      </div>
     </div>
   </div>
 

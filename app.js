@@ -555,8 +555,13 @@ function closeImageZoom() {
 }
 
 document.addEventListener('keydown', (event) => {
-  const modal = document.getElementById('image-zoom-modal');
-  if (modal?.classList.contains('show')) handleImageZoomKeydown(event);
+  const zoomModal = document.getElementById('image-zoom-modal');
+  if (zoomModal?.classList.contains('show')) handleImageZoomKeydown(event);
+
+  const logoutModal = document.getElementById('logoutConfirmModal');
+  if (!logoutModal?.hasAttribute('hidden') && event.key === 'Escape') {
+    closeLogoutConfirmModal();
+  }
 });
 
 function normalizeQrOutput(container, size) {
@@ -1167,11 +1172,36 @@ function openAdminLoginModal() {
   });
 }
 
-function logoutAdmin() {
+function openLogoutConfirmModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  const nameEl = document.getElementById('logoutConfirmUserName');
+  const displayName = currentUser?.name
+    || document.getElementById('admin-user-name')?.textContent?.trim()
+    || 'ผู้ดูแลระบบ';
+  if (nameEl) nameEl.textContent = displayName;
+  if (!modal) return;
+  modal.removeAttribute('hidden');
+  document.body.style.overflow = 'hidden';
+  modal.querySelector('.logout-confirm-btn-cancel')?.focus();
+}
+
+function closeLogoutConfirmModal() {
+  const modal = document.getElementById('logoutConfirmModal');
+  if (modal) modal.setAttribute('hidden', '');
+  document.body.style.overflow = '';
+}
+
+function confirmLogoutAdmin() {
+  closeLogoutConfirmModal();
   clearAdminSessionStorage();
   isAdminMode = false;
   currentUser = null;
   switchTab('borrow');
+  Swal.fire({ icon: 'success', title: 'ออกจากระบบแล้ว', timer: 1200, showConfirmButton: false });
+}
+
+function logoutAdmin() {
+  openLogoutConfirmModal();
 }
 
 function toggleAdminSidebar() {

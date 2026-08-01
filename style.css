@@ -1457,6 +1457,176 @@ body {
   outline-offset: 3px;
 }
 
+.sidebar-menu .menu-item-logout {
+  margin-top: 12px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.menu-item-logout:hover {
+  background: rgba(251, 113, 133, 0.16);
+  color: #ffe4e6;
+}
+
+#menu-item-logout i { color: #fb7185; filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.4)); }
+
+.logout-confirm-modal[hidden] {
+  display: none;
+}
+
+.logout-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(7, 89, 133, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.logout-confirm-dialog {
+  width: min(420px, 100%);
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(7, 89, 133, 0.28);
+  overflow: hidden;
+  animation: logoutConfirmIn var(--motion-standard) var(--ease-out);
+}
+
+.logout-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 22px 16px;
+  background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+}
+
+.logout-confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 113, 133, 0.18);
+  color: #fda4af;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.logout-confirm-heading {
+  min-width: 0;
+}
+
+.logout-confirm-title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.logout-confirm-meta {
+  margin: 4px 0 0;
+  color: #bae6fd;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.logout-confirm-body {
+  margin: 0;
+  padding: 18px 22px 0;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.logout-confirm-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  padding: 20px 22px 22px;
+}
+
+.logout-confirm-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+}
+
+.logout-confirm-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.logout-confirm-btn-cancel {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.logout-confirm-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.logout-confirm-btn-danger {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.28);
+}
+
+.logout-confirm-btn-danger:hover {
+  background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+  transform: translateY(-1px);
+}
+
+@keyframes logoutConfirmIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 480px) {
+  .logout-confirm-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .logout-confirm-btn {
+    min-width: 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logout-confirm-dialog {
+    animation: none;
+  }
+
+  .logout-confirm-btn {
+    transition: none;
+  }
+
+  .logout-confirm-btn-danger:hover {
+    transform: none;
+  }
+}
+
 .signature-modal[hidden] {
   display: none;
 }
@@ -1807,7 +1977,6 @@ body {
 #menu-item-transactions i { color: #fbbf24; filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4)); }
 #menu-item-reports i { color: #818cf8; filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.4)); }
 #menu-item-users i { color: #2dd4bf; filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.4)); }
-.sidebar-menu .menu-item[onclick*="logoutAdmin"] i { color: #fb7185; filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.4)); }
 
 /* Modern Stat Cards (Vibrant Gradients, Badges & Micro-animations) */
 .modern-stat-card {
