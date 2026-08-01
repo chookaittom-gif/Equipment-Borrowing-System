@@ -161,6 +161,16 @@ function toJavaScriptString(value) {
     .replace(/'/g, '\\u0027');
 }
 
+// Use %22 (not raw quotes) so this URL is safe inside HTML/JS attribute handlers.
+const EQUIPMENT_IMAGE_FALLBACK =
+  "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22250%22 viewBox=%220 0 400 250%22%3E%3Crect width=%22400%22 height=%22250%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2216%22 fill=%22%2394a3b8%22%3E%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%AD%E0%B8%B8%E0%B8%9B%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B9%8C%3C/text%3E%3C/svg%3E";
+
+function handleEquipmentImageError(img) {
+  if (!img) return;
+  img.onerror = null;
+  img.src = EQUIPMENT_IMAGE_FALLBACK;
+}
+
 // ==========================================
 // Initialization & Navigation
 // ==========================================
@@ -407,13 +417,12 @@ function renderEquipmentGrid() {
     const isCartAdded = cart.some(c => c.id === item.id);
 
     const catLabel = getCategoryLabel(item.category);
-    const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Sarabun, sans-serif' font-size='16' fill='%2394a3b8'%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E";
-    const imgUrl = getSampleEquipmentImage(item) || fallbackSvg;
+    const imgUrl = getSampleEquipmentImage(item) || EQUIPMENT_IMAGE_FALLBACK;
 
     return `
       <div class="equipment-card">
         <div class="image-gallery">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onerror="this.onerror=null;this.src='${fallbackSvg}';" onclick="zoomImage(this.src)">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
           <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')">
             <i class="fa-solid fa-qrcode text-sky-700 text-xl"></i>
           </div>
@@ -847,13 +856,24 @@ function showSignatureDetail(transId, borrower, date, sigUrl) {
   const borrowerEl = document.getElementById('sigModalBorrower');
   const dateEl = document.getElementById('sigModalDate');
   const imgEl = document.getElementById('sigModalImg');
+  const safeUrl = String(sigUrl || '').trim();
 
   if (transEl) transEl.textContent = transId || '-';
   if (borrowerEl) borrowerEl.textContent = borrower || '-';
   if (dateEl) dateEl.textContent = date || '-';
   if (imgEl) {
-    imgEl.src = sigUrl || '';
-    imgEl.alt = borrower ? `ลายเซ็นของ ${borrower}` : 'ลายเซ็น';
+    imgEl.onerror = () => {
+      imgEl.onerror = null;
+      imgEl.removeAttribute('src');
+      imgEl.alt = 'ไม่สามารถโหลดรูปภาพลายเซ็นได้';
+    };
+    if (safeUrl) {
+      imgEl.src = safeUrl;
+      imgEl.alt = borrower ? `ลายเซ็นของ ${borrower}` : 'ลายเซ็น';
+    } else {
+      imgEl.removeAttribute('src');
+      imgEl.alt = 'ไม่มีข้อมูลลายเซ็น';
+    }
   }
   document.getElementById('signatureModal')?.classList.remove('hidden');
 }
