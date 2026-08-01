@@ -585,6 +585,20 @@
     </div>
   </div>
 
+  <!-- Signature Preview Modal -->
+  <div id="signatureModal" class="signature-modal hidden" onclick="if(event.target===this) closeSignatureModal()">
+    <div class="signature-modal-dialog">
+      <div class="signature-modal-header">
+        <div>
+          <h2 class="signature-modal-title">ลายเซ็นผู้ยืม</h2>
+          <p class="signature-modal-meta">รหัส: <span id="sigModalTransId"></span> | ผู้ยืม: <span id="sigModalBorrower"></span> (<span id="sigModalDate"></span>)</p>
+        </div>
+        <button type="button" class="signature-modal-close" onclick="closeSignatureModal()" aria-label="ปิดภาพลายเซ็น">ปิด</button>
+      </div>
+      <img id="sigModalImg" class="signature-modal-image" alt="ลายเซ็นผู้ยืม">
+    </div>
+  </div>
+
   <!-- QR Modal -->
   <div id="qr-modal" class="qr-modal-overlay" onclick="if(event.target===this) closeQRModal()">
     <div class="qr-modal-content">

@@ -336,8 +336,14 @@ function getSampleEquipmentImage(item) {
   if (name.includes('ฟอกอากาศ') || name.includes('air purifier')) {
     return 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=crop&q=80';
   }
-  if (name.includes('แม็ค') || name.includes('mac') || name.includes('คอมพิวเตอร์') || name.includes('pc') || name.includes('ตั้งโต๊ะ') || name.includes('โน้ตบุ๊ก')) {
+  if (name.includes('แม็ค') || name.includes('macbook') || name.includes('mac')) {
     return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('ตั้งโต๊ะ') || name.includes('pc') || name.includes('ชุดคอมพิวเตอร์')) {
+    return 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('โน้ตบุ๊ก') || name.includes('notebook') || name.includes('laptop') || name.includes('lenovo')) {
+    return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=crop&q=80';
   }
   if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
     return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80';
@@ -345,13 +351,25 @@ function getSampleEquipmentImage(item) {
   if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
     return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80';
   }
+  if (name.includes('เลเซอร์') || name.includes('kress') || name.includes('วัดระดับ')) {
+    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+  }
   if (name.includes('หม้อ') || name.includes('ต้ม')) {
     return 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=crop&q=80';
   }
-  if (name.includes('กระทะ') || name.includes('ผัด')) {
+  if (name.includes('กระทะก้นลึก')) {
     return 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=crop&q=80';
   }
-  if (name.includes('กะละมัง') || name.includes('สแตนเลส') || name.includes('ถ้วย') || name.includes('ชาม') || name.includes('กระบวย') || name.includes('ตะหลิว') || name.includes('ทัพพี')) {
+  if (name.includes('กระทะ') || name.includes('สแตนเลส')) {
+    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('กระบวย')) {
+    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('ตะหลิว')) {
+    return 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('ทัพพี')) {
     return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80';
   }
 
@@ -1166,15 +1184,17 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageTotal').value = item.total;
     document.getElementById('manageAvailable').value = item.available;
 
-    if (item.image1) {
+    const sampleImg = getSampleEquipmentImage(item);
+    const img1Src = item.image1 || sampleImg;
+    if (img1Src) {
       const p1 = document.getElementById('preview1');
-      if (p1) { p1.src = item.image1; document.getElementById('preview1Container').classList.remove('hidden'); }
-      document.getElementById('image1Url').value = item.image1;
+      if (p1) { p1.src = img1Src; document.getElementById('preview1Container').classList.remove('hidden'); }
+      document.getElementById('image1Url').value = item.image1 || '';
     }
     if (item.image2) {
       const p2 = document.getElementById('preview2');
       if (p2) { p2.src = item.image2; document.getElementById('preview2Container').classList.remove('hidden'); }
-      document.getElementById('image2Url').value = item.image2;
+      document.getElementById('image2Url').value = item.image2 || '';
     }
   } else {
     title.innerHTML = `<i class="fa-solid fa-plus mr-2"></i>เพิ่มอุปกรณ์ใหม่`;
