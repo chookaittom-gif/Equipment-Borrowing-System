@@ -586,10 +586,13 @@
 
   <!-- Modals -->
   <!-- Image Zoom Modal -->
-  <div id="image-zoom-modal" class="image-zoom-modal" onclick="if(event.target===this) closeImageZoom()">
+  <div id="image-zoom-modal" class="image-zoom-modal" role="dialog" aria-modal="true" aria-labelledby="imageZoomCaption" onclick="if(event.target===this) closeImageZoom()">
+    <button type="button" class="image-zoom-close" onclick="closeImageZoom()" aria-label="ปิดภาพอุปกรณ์">
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
     <div class="image-zoom-content">
-      <button class="image-zoom-close" onclick="closeImageZoom()"><i class="fas fa-times"></i></button>
-      <img id="zoomed-image" src="" alt="Zoomed Image">
+      <img id="zoomed-image" src="" alt="">
+      <p id="imageZoomCaption" class="image-zoom-caption"></p>
     </div>
   </div>
 

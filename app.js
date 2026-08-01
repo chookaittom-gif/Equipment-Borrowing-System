@@ -449,7 +449,7 @@ function renderEquipmentGrid() {
 
     return `
       <div class="equipment-card">
-        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
+        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
           <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
           <div class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
@@ -505,7 +505,9 @@ function changePage(direction) {
 
 function openEquipmentImageFromGallery(el) {
   const url = String(el?.dataset?.src || '').trim();
-  if (url) zoomImage(url);
+  const equipName = String(el?.dataset?.equipName || '').trim();
+  const equipId = String(el?.dataset?.equipId || '').trim();
+  if (url) zoomImage(url, equipName, equipId);
 }
 
 function handleEquipmentImageGalleryKeydown(event, el) {
@@ -515,18 +517,47 @@ function handleEquipmentImageGalleryKeydown(event, el) {
   }
 }
 
-function zoomImage(url) {
+function buildEquipmentImageLabel(equipName, equipId) {
+  const name = String(equipName || '').trim();
+  const id = String(equipId || '').trim();
+  if (name && id) return `${name} (${id})`;
+  return name || id || 'ภาพอุปกรณ์';
+}
+
+function zoomImage(url, equipName, equipId) {
   const modal = document.getElementById('image-zoom-modal');
   const img = document.getElementById('zoomed-image');
-  if (modal && img) {
-    img.src = url;
-    modal.classList.add('show');
-  }
+  const caption = document.getElementById('imageZoomCaption');
+  if (!modal || !img) return;
+
+  const label = buildEquipmentImageLabel(equipName, equipId);
+  img.src = url;
+  img.alt = label;
+  if (caption) caption.textContent = label;
+  modal.classList.add('show');
+  modal.querySelector('.image-zoom-close')?.focus();
+}
+
+function handleImageZoomKeydown(event) {
+  if (event.key === 'Escape') closeImageZoom();
 }
 
 function closeImageZoom() {
-  document.getElementById('image-zoom-modal')?.classList.remove('show');
+  const modal = document.getElementById('image-zoom-modal');
+  const img = document.getElementById('zoomed-image');
+  const caption = document.getElementById('imageZoomCaption');
+  modal?.classList.remove('show');
+  if (img) {
+    img.src = '';
+    img.alt = '';
+  }
+  if (caption) caption.textContent = '';
 }
+
+document.addEventListener('keydown', (event) => {
+  const modal = document.getElementById('image-zoom-modal');
+  if (modal?.classList.contains('show')) handleImageZoomKeydown(event);
+});
 
 function normalizeQrOutput(container, size) {
   if (!container) return;
