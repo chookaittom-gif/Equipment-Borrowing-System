@@ -300,6 +300,20 @@ function filterEquipment() {
   renderEquipmentGrid();
 }
 
+function formatImageUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const url = rawUrl.trim();
+  if (!url) return '';
+  if (url.startsWith('data:image')) return url;
+
+  // Convert Google Drive view/share URLs to direct thumbnail URLs
+  const driveMatch = url.match(/(?:file\/d\/|id=|\/d\/)([a-zA-Z0-9_-]{25,})/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
+  }
+  return url;
+}
+
 function renderEquipmentGrid() {
   const grid = document.getElementById('equipment-grid');
   if (!grid) return;
@@ -332,7 +346,8 @@ function renderEquipmentGrid() {
 
     const catLabel = categoryLabels[item.category] || item.category || 'ทั่วไป';
     const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Sarabun, sans-serif' font-size='16' fill='%2394a3b8'%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E";
-    const imgUrl = item.image1 || item.image2 || fallbackSvg;
+    const formattedUrl = formatImageUrl(item.image1 || item.image2);
+    const imgUrl = formattedUrl || fallbackSvg;
 
     return `
       <div class="equipment-card">
