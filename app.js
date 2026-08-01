@@ -810,13 +810,28 @@ function openBorrowModalFromCart() {
   const modal = document.getElementById('borrowModal');
   const container = document.getElementById('selectedItemsContainer');
 
+  const cartIds = cart.map(c => c.id);
+  const matchedEquipment = equipmentData.filter(e => cartIds.includes(e.id));
+  const equipmentById = Object.fromEntries(matchedEquipment.map(e => [e.id, e]));
+  const storageLocations = [...new Set(matchedEquipment.map(e => String(e.location || '').trim()).filter(Boolean))];
+  const showStorageLocation = storageLocations.length > 1;
+
   if (container) {
-    container.innerHTML = cart.map(c => `
-      <div class="flex justify-between items-center border-b py-2 text-sm">
-        <span class="font-semibold text-gray-800">${escapeHtml(c.name)}</span>
-        <span class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-bold">${c.qty} ชิ้น</span>
+    container.innerHTML = cart.map(c => {
+      const storageLocation = equipmentById[c.id]?.location;
+      const storageLine = showStorageLocation && storageLocation
+        ? `<div class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1" aria-hidden="true"></i>เก็บที่: ${escapeHtml(storageLocation)}</div>`
+        : '';
+      return `
+      <div class="flex justify-between items-start border-b py-2 text-sm">
+        <div class="min-w-0 flex-1 pr-3">
+          <span class="font-semibold text-gray-800">${escapeHtml(c.name)}</span>
+          ${storageLine}
+        </div>
+        <span class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-bold shrink-0">${c.qty} ชิ้น</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   prefillBorrowRoomFromCart();
