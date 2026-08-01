@@ -99,14 +99,8 @@ const ACTION_ALLOWLIST = {
 function doGet(e) {
   try {
     const params = (e && e.parameter) ? e.parameter : {};
-    if (params.view === 'report') {
-      const type = params.type || 'all';
-      const reportRes = getReportData(type);
-      return createJsonResponse({ success: true, data: reportRes });
-    }
-
     if (!params.action) {
-      return serveFrontend();
+      return serveFrontend(e);
     }
 
     const req = parseRequestData(e);
@@ -123,24 +117,27 @@ function doGet(e) {
   }
 }
 
-function serveFrontend() {
-  const apiUrl = getCleanWebAppUrl();
-  let html = HtmlService.createTemplateFromFile('index').getRawContent();
-  const css = HtmlService.createTemplateFromFile('style.css').getRawContent();
-  const js = HtmlService.createTemplateFromFile('app.js').getRawContent();
-  const configScript =
-    '<script>window.APP_CONFIG=window.APP_CONFIG||{};window.APP_CONFIG.apiUrl=' +
-    JSON.stringify(apiUrl) +
-    ';</script>';
-
-  html = html
-    .replace('<link rel="stylesheet" href="./style.css">', '<style>' + css + '</style>')
-    .replace(/<script>\s*window\.APP_CONFIG[\s\S]*?<\/script>/, configScript)
-    .replace('<script src="./app.js" defer></script>', '<script>' + js + '</script>');
+function serveFrontend(e) {
+  const targetUrl = buildFrontendRedirectUrl(e);
+  const html =
+    '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
+    '<meta http-equiv="refresh" content="0;url=' + escapeHtmlAttr(targetUrl) + '">' +
+    '<script>window.location.replace(' + JSON.stringify(targetUrl) + ');</script>' +
+    '</head><body><p>กำลังไปยังหน้าเว็บ...</p>' +
+    '<p><a href="' + escapeHtmlAttr(targetUrl) + '">คลิกที่นี่</a> หากไม่ถูกเปลี่ยนหน้าอัตโนมัติ</p></body></html>';
 
   return HtmlService.createHtmlOutput(html)
     .setTitle('ระบบยืม-คืนอุปกรณ์')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function escapeHtmlAttr(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function doPost(e) {
@@ -464,6 +461,26 @@ function formatThaiDate(dateInput, includeTime = false) {
 }
 
 const PUBLIC_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzAJRYOIvx7x3Q-iMP2DF2sVHZ-y5lXw3u8XncxuGHQuXzJklrjG_eUQExCCETrn2cw/exec';
+const PUBLIC_FRONTEND_URL = 'https://equipment-borrowing-system-seven.vercel.app';
+
+function getPublicFrontendUrl() {
+  return PUBLIC_FRONTEND_URL.replace(/\/$/, '');
+}
+
+function buildFrontendRedirectUrl(e) {
+  const base = getPublicFrontendUrl();
+  const params = (e && e.parameter) ? e.parameter : {};
+  const query = [];
+
+  Object.keys(params).forEach(function(key) {
+    const val = params[key];
+    if (val !== undefined && val !== null && String(val) !== '') {
+      query.push(encodeURIComponent(key) + '=' + encodeURIComponent(String(val)));
+    }
+  });
+
+  return query.length ? base + '?' + query.join('&') : base;
+}
 
 function getCleanWebAppUrl() {
   try {
@@ -480,7 +497,7 @@ function normalizeReportType(reportType) {
 }
 
 function getReportUrl(reportType) {
-  return `${getCleanWebAppUrl()}?view=report&type=${encodeURIComponent(normalizeReportType(reportType))}`;
+  return `${getPublicFrontendUrl()}?view=report&type=${encodeURIComponent(normalizeReportType(reportType))}`;
 }
 
 function getReportData(reportType) {
@@ -554,8 +571,7 @@ function getReportData(reportType) {
 }
 
 function generateQRCode(equipId, equipName) {
-  const webAppUrl = getCleanWebAppUrl();
-  const borrowUrl = `${webAppUrl}?action=borrow&id=${encodeURIComponent(equipId)}`;
+  const borrowUrl = `${getPublicFrontendUrl()}?action=borrow&id=${encodeURIComponent(equipId)}`;
   return `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(borrowUrl)}&choe=UTF-8`;
 }
 

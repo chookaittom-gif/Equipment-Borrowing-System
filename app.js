@@ -7,6 +7,7 @@
 
 const DEFAULT_API_URL =
   'https://script.google.com/macros/s/AKfycbzAJRYOIvx7x3Q-iMP2DF2sVHZ-y5lXw3u8XncxuGHQuXzJklrjG_eUQExCCETrn2cw/exec';
+const DEFAULT_FRONTEND_URL = 'https://equipment-borrowing-system-seven.vercel.app';
 
 function resolveApiUrl() {
   const candidate = String(window.APP_CONFIG?.apiUrl || '').trim();
@@ -14,6 +15,15 @@ function resolveApiUrl() {
     return candidate;
   }
   return DEFAULT_API_URL;
+}
+
+function resolveFrontendUrl() {
+  const candidate = String(window.APP_CONFIG?.frontendUrl || '').trim().replace(/\/$/, '');
+  if (/^https:\/\/.+/i.test(candidate)) {
+    return candidate;
+  }
+  const path = window.location.pathname.replace(/\/$/, '');
+  return window.location.origin + (path === '' ? '' : path);
 }
 
 // ==========================================
@@ -541,7 +551,7 @@ function showQRCode(id, name) {
 
   if (container) {
     container.innerHTML = '';
-    const borrowUrl = `${window.location.origin}${window.location.pathname}?action=borrow&id=${encodeURIComponent(id)}`;
+    const borrowUrl = `${resolveFrontendUrl()}?action=borrow&id=${encodeURIComponent(id)}`;
     new QRCode(container, {
       text: borrowUrl,
       width: qrSize,
