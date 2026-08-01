@@ -2015,11 +2015,11 @@ async function handleContactSubmit(event) {
 // ==========================================
 function getReportEmptyMessage(reportType) {
   const type = String(reportType || 'all');
-  if (type === 'monthly') return 'ไม่มีรายการยืm-คืnในเดือนนี้ ไม่ต้องเปิดรายงาน';
-  if (type === 'borrowing') return 'ไม่มีรายการที่กำลังยืm ไม่ต้องเปิดรายงาน';
-  if (type === 'daily') return 'ไม่มีรายการยืm-คืnในวันนี้ ไม่ต้องเปิดรายงาน';
-  if (type === 'yearly') return 'ไม่มีรายการยืm-คืnในปีนี้ ไม่ต้องเปิดรายงาน';
-  return 'ยังไม่มีรายการยืm-คืnในระบบ ไม่ต้องเปิดรายงาน';
+  if (type === 'monthly') return 'ไม่มีรายการยืม-คืนในเดือนนี้ ไม่ต้องเปิดรายงาน';
+  if (type === 'borrowing') return 'ไม่มีรายการที่กำลังยืม ไม่ต้องเปิดรายงาน';
+  if (type === 'daily') return 'ไม่มีรายการยืม-คืนในวันนี้ ไม่ต้องเปิดรายงาน';
+  if (type === 'yearly') return 'ไม่มีรายการยืม-คืนในปีนี้ ไม่ต้องเปิดรายงาน';
+  return 'ยังไม่มีรายการยืม-คืนในระบบ ไม่ต้องเปิดรายงาน';
 }
 
 async function openReportView(reportType = 'all') {
