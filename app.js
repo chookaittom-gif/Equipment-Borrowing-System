@@ -374,52 +374,52 @@ function getSampleEquipmentImage(item) {
   const cat = (item.category || '').toLowerCase();
 
   if (name.includes('ฟอกอากาศ') || name.includes('air purifier')) {
-    return 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('แม็ค') || name.includes('macbook') || name.includes('mac')) {
-    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('ตั้งโต๊ะ') || name.includes('pc') || name.includes('ชุดคอมพิวเตอร์')) {
-    return 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('โน้ตบุ๊ก') || name.includes('notebook') || name.includes('laptop') || name.includes('lenovo')) {
-    return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
-    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
-    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('เลเซอร์') || name.includes('kress') || name.includes('วัดระดับ')) {
-    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('หม้อ') || name.includes('ต้ม')) {
-    return 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('กระทะก้นลึก')) {
-    return 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('กระทะ') || name.includes('สแตนเลส')) {
-    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('กระบวย')) {
-    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('ตะหลิว')) {
-    return 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=contain&q=80';
   }
   if (name.includes('ทัพพี')) {
-    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
   }
 
   if (cat === 'audiovisual') {
-    return 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=contain&q=80';
   }
   if (cat === 'kitchen') {
-    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
   }
-  return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80';
+  return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=contain&q=80';
 }
 
 function renderEquipmentGrid() {
@@ -452,7 +452,7 @@ function renderEquipmentGrid() {
     return `
       <div class="equipment-card">
         <div class="image-gallery">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
           <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
