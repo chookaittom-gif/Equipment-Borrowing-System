@@ -587,11 +587,11 @@
   </div>
 
   <!-- Signature Preview Modal -->
-  <div id="signatureModal" class="signature-modal hidden" onclick="if(event.target===this) closeSignatureModal()">
+  <div id="signatureModal" class="signature-modal" hidden role="dialog" aria-modal="true" aria-labelledby="signatureModalTitle" onclick="if(event.target===this) closeSignatureModal()">
     <div class="signature-modal-dialog">
       <div class="signature-modal-header">
         <div>
-          <h2 class="signature-modal-title">ลายเซ็นผู้ยืม</h2>
+          <h2 id="signatureModalTitle" class="signature-modal-title">ลายเซ็นผู้ยืม</h2>
           <p class="signature-modal-meta">รหัส: <span id="sigModalTransId"></span> | ผู้ยืม: <span id="sigModalBorrower"></span> (<span id="sigModalDate"></span>)</p>
         </div>
         <button type="button" class="signature-modal-close" onclick="closeSignatureModal()" aria-label="ปิดภาพลายเซ็น">ปิด</button>

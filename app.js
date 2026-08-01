@@ -852,12 +852,14 @@ function showSignatureModalFromData(btn) {
 }
 
 function showSignatureDetail(transId, borrower, date, sigUrl) {
+  const modal = document.getElementById('signatureModal');
   const transEl = document.getElementById('sigModalTransId');
   const borrowerEl = document.getElementById('sigModalBorrower');
   const dateEl = document.getElementById('sigModalDate');
   const imgEl = document.getElementById('sigModalImg');
   const safeUrl = String(sigUrl || '').trim();
 
+  if (!modal) return;
   if (transEl) transEl.textContent = transId || '-';
   if (borrowerEl) borrowerEl.textContent = borrower || '-';
   if (dateEl) dateEl.textContent = date || '-';
@@ -875,11 +877,15 @@ function showSignatureDetail(transId, borrower, date, sigUrl) {
       imgEl.alt = 'ไม่มีข้อมูลลายเซ็น';
     }
   }
-  document.getElementById('signatureModal')?.classList.remove('hidden');
+  modal.hidden = false;
 }
 
 function closeSignatureModal() {
-  document.getElementById('signatureModal')?.classList.add('hidden');
+  const modal = document.getElementById('signatureModal');
+  const imgEl = document.getElementById('sigModalImg');
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  if (imgEl) imgEl.removeAttribute('src');
 }
 
 // ==========================================
