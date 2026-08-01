@@ -1824,7 +1824,7 @@ function renderAdminReports() {
     usageStatsContainer.innerHTML = `
       <div>
         <div class="flex justify-between items-center text-sm font-semibold mb-1.5">
-          <span class="text-gray-700 flex items-center gap-2"><i class="fas fa-check-circle text-emerald-500"></i> คืนแล้ว</span>
+          <span class="text-gray-700 flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500"></i> คืนแล้ว</span>
           <span class="text-emerald-700 font-bold">${returned} รายการ (${returnedPct}%)</span>
         </div>
         <div class="usage-progress-bar">
@@ -1833,7 +1833,7 @@ function renderAdminReports() {
       </div>
       <div>
         <div class="flex justify-between items-center text-sm font-semibold mb-1.5">
-          <span class="text-gray-700 flex items-center gap-2"><i class="fas fa-hourglass-half text-amber-500"></i> กำลังยืม</span>
+          <span class="text-gray-700 flex items-center gap-3"><i class="fas fa-hourglass-half text-amber-500"></i> กำลังยืม</span>
           <span class="text-amber-700 font-bold">${borrowing} รายการ (${borrowingPct}%)</span>
         </div>
         <div class="usage-progress-bar">
@@ -1865,7 +1865,7 @@ function renderAdminReports() {
         const rankLabel = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
         const barWidth = Math.round((count / maxCount) * 100);
         return `
-          <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+          <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
             <div class="popular-rank-badge ${rankClass}">${rankLabel}</div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-center mb-1">
@@ -1901,34 +1901,41 @@ function renderBorrowChart() {
     counts.push(transactionData.filter(t => t.dateBorrow === dateStr).length);
   }
 
-  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-  gradient.addColorStop(0, 'rgba(2, 132, 199, 0.35)');
-  gradient.addColorStop(1, 'rgba(2, 132, 199, 0.0)');
-
   borrowChart = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels: days,
       datasets: [{
         label: 'จำนวนการยืม (รายการ)',
         data: counts,
-        borderColor: '#0284c7',
-        borderWidth: 3,
-        pointBackgroundColor: '#ffffff',
-        pointBorderColor: '#0284c7',
-        pointBorderWidth: 3,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        backgroundColor: gradient,
-        fill: true,
-        tension: 0.35
+        backgroundColor: 'rgba(2, 132, 199, 0.85)',
+        hoverBackgroundColor: 'rgba(3, 105, 161, 0.95)',
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 8,
+        borderSkipped: false,
+        maxBarThickness: 48
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 600,
+        easing: 'easeOutQuart'
+      },
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { family: 'Sarabun', weight: '600' },
+          bodyFont: { family: 'Sarabun' },
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.y} รายการ`
+          }
+        }
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { family: 'Sarabun' } } },
