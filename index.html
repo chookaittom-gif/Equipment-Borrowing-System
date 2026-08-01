@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบยืม-คืนอุปกรณ์</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <!-- ==========================================
+       1. Main Application Container
+       ========================================== -->
+  <div id="mainAppContainer">
+    <!-- User Layout (Default Public View) -->
+    <div id="user-layout" class="page-wrapper">
+      <div class="main-content-wrapper">
+        <header class="site-header sticky top-0 z-50 no-print shadow-2xl">
+          <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+              <div class="p-1 rounded-xl shadow-lg bg-white/10">
+                <img src="https://img1.pic.in.th/images/ChatGPT-Image-29-..-2569-15_10_43.png" alt="ระบบยืม-คืนอุปกรณ์" class="w-[120px] md:w-[220px] max-h-16 md:max-h-20 object-contain">
+              </div>
+              <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-white">ระบบยืม-คืนอุปกรณ์</h1>
+                <p class="text-sm text-sky-100">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+              </div>
+            </div>
+            <button id="mobile-menu-button" type="button" onclick="toggleMobileMenu()" aria-controls="desktop-nav" aria-expanded="false" class="md:hidden bg-white/10 p-3 rounded-xl hover:bg-white/20 transition">
+              <i class="fa-solid fa-bars fa-lg text-white"></i>
+            </button>
+          </div>
+          <nav class="bg-gradient-to-r from-sky-700/90 to-sky-900/90 backdrop-blur-sm" id="desktop-nav">
+            <div class="container mx-auto px-4 flex space-x-1 overflow-x-auto py-1">
+              <button onclick="switchTab('borrow')" id="btn-borrow" class="nav-btn nav-active py-4 px-6 whitespace-nowrap">
+                <i class="fa-solid fa-hand-holding-hand mr-3"></i>ยืมอุปกรณ์
+              </button>
+              <button onclick="switchTab('history')" id="btn-history" class="nav-btn py-4 px-6 whitespace-nowrap text-sky-100 hover:text-white">
+                <i class="fa-solid fa-clock-rotate-left mr-3"></i>สถานะการยืม
+              </button>
+              <button onclick="switchTab('admin')" id="btn-admin" class="nav-btn py-4 px-6 whitespace-nowrap text-sky-100 hover:text-white">
+                <i class="fa-solid fa-user-shield mr-3"></i>ผู้ดูแลระบบ
+              </button>
+              <button onclick="openContactModal()" id="btn-contact" class="nav-btn py-4 px-6 whitespace-nowrap text-sky-100 hover:text-white">
+                <i class="fa-solid fa-envelope mr-3"></i>ติดต่อสอบถาม
+              </button>
+            </div>
+          </nav>
+        </header>
+
+        <main class="flex-grow container mx-auto px-4 py-8">
+          <!-- Loading State -->
+          <div id="loading-spinner" class="loader-container">
+            <div class="olive-loader">
+              <div class="inner-circle"></div>
+            </div>
+            <p class="text-gray-600 font-medium mt-6 text-lg">กำลังโหลดข้อมูล...</p>
+            <p class="text-gray-400 text-sm mt-2">โปรดรอสักครู่</p>
+          </div>
+
+          <!-- 1. Borrow Section -->
+          <div id="borrow-section" class="hidden-section fade-in">
+            <!-- Cart Floating Button -->
+            <button id="cartButton" class="cart-button" onclick="toggleCart()" style="bottom: 80px; right: 20px;">
+              <i class="fa-solid fa-cart-shopping"></i>
+              <span id="cartBadge" class="cart-badge" style="display: none;">0</span>
+            </button>
+
+            <!-- Cart Modal Drawer -->
+            <div id="cartModal" class="cart-modal">
+              <div class="cart-header">
+                <h3>ตะกร้าการยืม</h3>
+                <button onclick="toggleCart()" class="text-white hover:text-gray-200">
+                  <i class="fa-solid fa-xmark fa-lg"></i>
+                </button>
+              </div>
+              <div class="cart-content">
+                <div id="cartEmpty" class="cart-empty">
+                  <i class="fa-solid fa-cart-arrow-down"></i>
+                  <p>ยังไม่มีรายการในตะกร้า</p>
+                </div>
+                <div id="cartItems" class="hidden-section"></div>
+              </div>
+              <div class="cart-footer">
+                <button id="checkoutButton" class="w-full btn-olive py-3 mb-2" onclick="openBorrowModalFromCart()" disabled>
+                  <i class="fa-solid fa-hand-holding-hand mr-2"></i>ยืมรายการทั้งหมด
+                </button>
+                <button class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg" onclick="clearCart()">
+                  <i class="fa-solid fa-trash mr-2"></i>ล้างตะกร้า
+                </button>
+              </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div class="stat-card stat-card-total">
+                <div class="p-5 flex items-center justify-between">
+                  <div>
+                    <div class="text-gray-500 text-sm uppercase font-semibold tracking-wide">อุปกรณ์ทั้งหมด</div>
+                    <div class="text-3xl font-bold text-gray-800 mt-2" id="stat-total">0</div>
+                    <div class="text-xs text-gray-400 mt-1">ชิ้น</div>
+                  </div>
+                  <div class="stat-card-icon"><i class="fa-solid fa-boxes-stacked fa-2x"></i></div>
+                </div>
+              </div>
+              <div class="stat-card stat-card-available">
+                <div class="p-5 flex items-center justify-between">
+                  <div>
+                    <div class="text-gray-500 text-sm uppercase font-semibold tracking-wide">พร้อมให้ยืม</div>
+                    <div class="text-3xl font-bold text-gray-800 mt-2" id="stat-available">0</div>
+                    <div class="text-xs text-gray-400 mt-1">ชิ้น</div>
+                  </div>
+                  <div class="stat-card-icon"><i class="fa-solid fa-circle-check fa-2x"></i></div>
+                </div>
+              </div>
+              <div class="stat-card stat-card-borrowed">
+                <div class="p-5 flex items-center justify-between">
+                  <div>
+                    <div class="text-gray-500 text-sm uppercase font-semibold tracking-wide">กำลังถูกยืม</div>
+                    <div class="text-3xl font-bold text-gray-800 mt-2" id="stat-borrowed">0</div>
+                    <div class="text-xs text-gray-400 mt-1">ชิ้น</div>
+                  </div>
+                  <div class="stat-card-icon"><i class="fa-solid fa-hand-holding-hand fa-2x"></i></div>
+                </div>
+              </div>
+              <div class="stat-card stat-card-today">
+                <div class="p-5 flex items-center justify-between">
+                  <div>
+                    <div class="text-gray-500 text-sm uppercase font-semibold tracking-wide">รายการวันนี้</div>
+                    <div class="text-3xl font-bold text-gray-800 mt-2" id="stat-today">0</div>
+                    <div class="text-xs text-gray-400 mt-1">ครั้ง</div>
+                  </div>
+                  <div class="stat-card-icon"><i class="fa-solid fa-calendar-day fa-2x"></i></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Search & Filter Panel -->
+            <div class="equipment-filter-panel bg-white p-6 rounded-2xl shadow-md mb-8 flex flex-col gap-4 border-2" style="border-color: var(--olive-pale);">
+              <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">
+                  <i class="fa-solid fa-list-ul mr-3" style="color: var(--olive-medium);"></i>รายการอุปกรณ์ทั้งหมด
+                </h2>
+                <div class="relative w-full md:w-1/3">
+                  <input type="text" id="searchInput" onkeyup="filterEquipment()" placeholder="ค้นหาชื่ออุปกรณ์..." class="form-input pl-12">
+                  <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+              </div>
+              <div id="category-filter-container" class="flex flex-nowrap sm:flex-wrap overflow-x-auto no-scrollbar gap-2 pt-3 border-t border-gray-100 pb-1 max-w-full"></div>
+            </div>
+
+            <!-- Equipment Cards Grid -->
+            <div id="equipment-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8"></div>
+
+            <!-- Pagination Bar -->
+            <div class="pagination-container no-print">
+              <button class="pagination-btn" id="btn-prev-page" onclick="changePage(-1)">
+                <i class="fas fa-chevron-left"></i> ก่อนหน้า
+              </button>
+              <span class="pagination-info">
+                หน้า <span id="current-page">1</span> จาก <span id="total-pages">1</span>
+              </span>
+              <button class="pagination-btn" id="btn-next-page" onclick="changePage(1)">
+                ถัดไป <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. History Section -->
+          <div id="history-section" class="hidden-section fade-in">
+            <div class="bg-white p-8 rounded-2xl shadow-md border-2" style="border-color: var(--olive-pale);">
+              <h2 class="text-2xl font-bold text-gray-800 mb-6 pb-4 border-b">
+                <i class="fa-solid fa-clock-rotate-left mr-3" style="color: var(--olive-medium);"></i>ตรวจสอบสถานะการยืม
+              </h2>
+              <div class="flex flex-col md:flex-row gap-4 mb-8">
+                <div class="relative flex-1">
+                  <input type="text" id="studentSearchEmail" placeholder="กรอกอีเมล์ของคุณ..." class="form-input pl-12">
+                  <i class="fa-solid fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button onclick="searchHistory()" class="btn-olive flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-search"></i> ค้นหา
+                </button>
+              </div>
+              <div class="overflow-x-auto rounded-xl border-2" style="border-color: var(--olive-pale);">
+                <table class="w-full text-sm text-left">
+                  <thead class="table-header">
+                    <tr>
+                      <th class="px-6 py-4 rounded-tl-lg">วันที่ยืม</th>
+                      <th class="px-6 py-4">อุปกรณ์</th>
+                      <th class="px-6 py-4 text-center">จำนวน</th>
+                      <th class="px-6 py-4">กำหนดคืน</th>
+                      <th class="px-6 py-4 text-center">ลายเซ็น</th>
+                      <th class="px-6 py-4 rounded-tr-lg">สถานะ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-table-body" class="divide-y divide-gray-100">
+                    <tr>
+                      <td colspan="6" class="text-center py-8 text-gray-500">
+                        <i class="fa-solid fa-magnifying-glass mb-2 text-2xl"></i>
+                        <p>กรุณากรอกอีเมล์เพื่อค้นหา</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Admin Section Placeholder -->
+          <div id="admin-section" class="hidden-section"></div>
+        </main>
+      </div>
+
+      <footer class="site-footer no-print">
+        <div class="container mx-auto px-4 text-center text-sky-100">
+          <p class="text-sm md:text-base">ระบบยืม-คืน v1.0 | © 2026 มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+          <p class="text-sm mt-1">พัฒนาโดย: นายชูเกียรติ กุศลสถิตย์</p>
+          <p class="text-sm mt-2">
+            <button onclick="openContactModal()" class="inline-flex items-center gap-2 text-sky-100 hover:text-white bg-sky-800/40 hover:bg-sky-800/60 px-4 py-2 rounded-full border border-sky-300/30 transition text-xs cursor-pointer shadow-sm font-medium">
+              <i class="fa-solid fa-envelope mr-2 text-sm"></i><span>ติดต่อสอบถาม / แจ้งปัญหา</span>
+            </button>
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Admin Panel Layout -->
+    <div id="admin-layout" class="admin-layout hidden-section">
+      <div id="admin-sidebar-overlay" onclick="toggleAdminSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden hidden"></div>
+      <aside class="admin-sidebar" id="admin-sidebar">
+        <div class="sidebar-header">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--olive-lighter);">
+              <i class="fas fa-user-shield text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold text-lg" id="admin-user-name">ผู้ดูแลระบบ</h3>
+              <p class="text-gray-300 text-sm" id="admin-user-role">Super Admin</p>
+            </div>
+          </div>
+        </div>
+        <nav class="sidebar-menu">
+          <div class="menu-item active" id="menu-item-dashboard" onclick="showAdminSection('dashboard', this)">
+            <i class="fas fa-chart-line"></i><span>หน้าหลัก</span>
+          </div>
+          <div class="menu-item" id="menu-item-equipment" onclick="showAdminSection('equipment', this)">
+            <i class="fas fa-boxes"></i><span>จัดการอุปกรณ์</span>
+          </div>
+          <div class="menu-item" id="menu-item-transactions" onclick="showAdminSection('transactions', this)">
+            <i class="fas fa-exchange-alt"></i><span>รายการยืม-คืน</span>
+          </div>
+          <div class="menu-item" id="menu-item-reports" onclick="showAdminSection('reports', this)">
+            <i class="fas fa-chart-bar"></i><span>รายงาน</span>
+          </div>
+          <div class="menu-item" id="menu-item-users" onclick="showAdminSection('users', this)">
+            <i class="fas fa-users-cog"></i><span>จัดการผู้ใช้งาน</span>
+          </div>
+          <div class="menu-item" onclick="logoutAdmin()">
+            <i class="fas fa-sign-out-alt"></i><span>ออกจากระบบ</span>
+          </div>
+        </nav>
+      </aside>
+
+      <div class="admin-content">
+        <div class="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-md flex items-center justify-between pb-4 pt-1 mb-6 border-b border-sky-200/80">
+          <div class="flex items-center gap-3">
+            <button onclick="toggleAdminSidebar()" class="md:hidden bg-white p-2.5 rounded-xl shadow text-gray-700 hover:bg-gray-50 transition border border-gray-200">
+              <i class="fas fa-bars fa-lg text-sky-700"></i>
+            </button>
+            <span class="text-sm font-bold text-sky-900 hidden sm:inline-flex items-center gap-2 bg-sky-100/90 px-4 py-2 rounded-xl border border-sky-300/80 shadow-sm">
+              <i class="fa-solid fa-user-shield text-sky-700 text-base"></i> โหมดผู้ดูแลระบบ
+            </span>
+          </div>
+          <button onclick="switchTab('borrow')" class="btn-olive py-2 px-5 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-store text-yellow-400"></i><span>ไปยังหน้ายืมอุปกรณ์</span>
+          </button>
+        </div>
+
+        <!-- Dashboard Sub-view -->
+        <div id="admin-dashboard" class="admin-section">
+          <h1 class="text-3xl font-bold mb-6" style="color: var(--olive-dark);"><i class="fas fa-chart-line mr-3"></i>แสดงรายละเอียดข้อมูล</h1>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm font-semibold">อุปกรณ์ทั้งหมด</p>
+                  <p class="text-3xl font-bold mt-2" style="color: var(--olive-dark);" id="admin-stat-total">0</p>
+                </div>
+                <i class="fas fa-boxes text-4xl" style="color: var(--olive-medium);"></i>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm font-semibold">พร้อมให้ยืม</p>
+                  <p class="text-3xl font-bold text-green-600 mt-2" id="admin-stat-available">0</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-green-500"></i>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm font-semibold">กำลังยืม</p>
+                  <p class="text-3xl font-bold text-yellow-600 mt-2" id="admin-stat-borrowed">0</p>
+                </div>
+                <i class="fas fa-hand-holding text-4xl text-yellow-500"></i>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm font-semibold">รายการวันนี้</p>
+                  <p class="text-3xl font-bold text-purple-600 mt-2" id="admin-stat-today">0</p>
+                </div>
+                <i class="fas fa-calendar-day text-4xl text-purple-500"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold mb-4" style="color: var(--olive-dark);"><i class="fas fa-clock mr-2"></i>รายการล่าสุด</h2>
+            <div id="admin-recent-transactions"></div>
+          </div>
+        </div>
+
+        <!-- Equipment Sub-view -->
+        <div id="admin-equipment" class="admin-section hidden-section">
+          <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h1 class="text-3xl font-bold" style="color: var(--olive-dark);"><i class="fas fa-boxes mr-3"></i>จัดการอุปกรณ์</h1>
+            <button onclick="openEquipModal('add')" class="btn-success flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i>เพิ่มอุปกรณ์ใหม่
+            </button>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="mb-4">
+              <div class="relative">
+                <input type="text" id="admin-equipment-search" onkeyup="renderAdminEquipmentTable()" placeholder="ค้นหาอุปกรณ์..." class="form-input pl-12">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            <div class="no-scrollbar">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-gray-800 text-white">
+                  <tr>
+                    <th class="px-6 py-4">รหัส</th>
+                    <th class="px-6 py-4">ชื่ออุปกรณ์</th>
+                    <th class="px-6 py-4">หมวดหมู่</th>
+                    <th class="px-6 py-4">สถานที่</th>
+                    <th class="px-6 py-4 text-center">ทั้งหมด</th>
+                    <th class="px-6 py-4 text-center">คงเหลือ</th>
+                    <th class="px-6 py-4 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-equipment-tbody" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+            <div class="pagination-container no-print mt-4">
+              <button class="pagination-btn" id="btn-admin-equip-prev" onclick="changeAdminEquipPage(-1)"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+              <span class="pagination-info">หน้า <span id="admin-equip-current-page">1</span> จาก <span id="admin-equip-total-pages">1</span></span>
+              <button class="pagination-btn" id="btn-admin-equip-next" onclick="changeAdminEquipPage(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Sub-view -->
+        <div id="admin-transactions" class="admin-section hidden-section">
+          <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h1 class="text-3xl font-bold" style="color: var(--olive-dark);"><i class="fas fa-exchange-alt mr-3"></i>รายการยืม-คืน</h1>
+            <button onclick="loadData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2">
+              <i class="fa-solid fa-rotate"></i>รีเฟรช
+            </button>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="mb-4 flex flex-col md:flex-row gap-4">
+              <div class="relative flex-1">
+                <input type="text" id="admin-trans-search" onkeyup="renderAdminTransactionsTable()" placeholder="ค้นหารายการ..." class="form-input pl-12">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="admin-show-all" onchange="renderAdminTransactionsTable()" class="sr-only peer">
+                <div class="relative w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer toggle-checkbox peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <span class="ml-3 text-sm font-medium text-gray-700">แสดงทั้งหมด</span>
+              </label>
+            </div>
+            <div class="no-scrollbar">
+              <table class="w-full text-sm text-left">
+                <thead class="table-header">
+                  <tr>
+                    <th class="px-6 py-4">ผู้ยืม</th>
+                    <th class="px-6 py-4">อุปกรณ์</th>
+                    <th class="px-6 py-4 text-center">จำนวน</th>
+                    <th class="px-6 py-4">วันที่ยืม</th>
+                    <th class="px-6 py-4">กำหนดคืน</th>
+                    <th class="px-6 py-4 text-center">ลายเซ็น</th>
+                    <th class="px-6 py-4">สถานะ</th>
+                    <th class="px-6 py-4 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-trans-tbody" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+            <div class="pagination-container no-print mt-4">
+              <button class="pagination-btn" id="btn-admin-trans-prev" onclick="changeAdminTransPage(-1)"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+              <span class="pagination-info">หน้า <span id="admin-trans-current-page">1</span> จาก <span id="admin-trans-total-pages">1</span></span>
+              <button class="pagination-btn" id="btn-admin-trans-next" onclick="changeAdminTransPage(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports Sub-view -->
+        <div id="admin-reports" class="admin-section hidden-section">
+          <h1 class="text-3xl font-bold mb-6" style="color: var(--olive-dark);"><i class="fas fa-chart-bar mr-3"></i>รายงานและสถิติ</h1>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="modern-stat-card card-total">
+              <div class="decorative-circle circle-1"></div>
+              <div class="decorative-circle circle-2"></div>
+              <div class="modern-card-header">
+                <div class="modern-card-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="modern-card-label">รายการทั้งหมด</div>
+              </div>
+              <div class="modern-card-value" id="report-total-trans">0</div>
+              <div class="modern-card-unit">รายการ</div>
+            </div>
+            <div class="modern-stat-card card-returned">
+              <div class="decorative-circle circle-1"></div>
+              <div class="decorative-circle circle-2"></div>
+              <div class="modern-card-header">
+                <div class="modern-card-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="modern-card-label">คืนแล้ว</div>
+              </div>
+              <div class="modern-card-value" id="report-returned">0</div>
+              <div class="modern-card-unit">รายการ</div>
+            </div>
+            <div class="modern-stat-card card-borrowing">
+              <div class="decorative-circle circle-1"></div>
+              <div class="decorative-circle circle-2"></div>
+              <div class="modern-card-header">
+                <div class="modern-card-icon"><i class="fas fa-hourglass-half"></i></div>
+                <div class="modern-card-label">กำลังยืม</div>
+              </div>
+              <div class="modern-card-value" id="report-borrowing">0</div>
+              <div class="modern-card-unit">รายการ</div>
+            </div>
+            <div class="modern-stat-card card-overdue">
+              <div class="decorative-circle circle-1"></div>
+              <div class="decorative-circle circle-2"></div>
+              <div class="modern-card-header">
+                <div class="modern-card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="modern-card-label">เลยกำหนด</div>
+              </div>
+              <div class="modern-card-value" id="report-overdue">0</div>
+              <div class="modern-card-unit">รายการ</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-file-export mr-2"></i>ส่งออกรายงาน</h3>
+              <div class="space-y-3">
+                <button onclick="openReportView('all')" class="btn-olive w-full flex items-center justify-center gap-2"><i class="fas fa-print"></i>พิมพ์รายงานทั้งหมด</button>
+                <button onclick="openReportView('monthly')" class="btn-success w-full flex items-center justify-center gap-2"><i class="fas fa-calendar-alt"></i>รายงานเดือนปัจจุบัน</button>
+                <button onclick="openReportView('borrowing')" class="bg-yellow-500 hover:bg-yellow-600 text-white w-full px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition"><i class="fas fa-hand-holding"></i>รายการกำลังยืม</button>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-chart-pie mr-2"></i>สถิติการใช้งาน</h3>
+              <div id="usage-stats" class="space-y-4"></div>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-trophy mr-2"></i>อุปกรณ์ยอดนิยม (Top 5)</h3>
+            <div id="popular-equipment" class="space-y-3"></div>
+          </div>
+
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-chart-line mr-2"></i>สถิติการยืม 7 วันล่าสุด</h3>
+            <div id="chart-container" class="h-64"><canvas id="borrowChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Users Sub-view -->
+        <div id="admin-users" class="admin-section hidden-section">
+          <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h1 class="text-3xl font-bold" style="color: var(--olive-dark);"><i class="fas fa-users-cog mr-3"></i>จัดการผู้ใช้งาน</h1>
+            <button onclick="openUserModal()" class="btn-success flex items-center gap-2">
+              <i class="fa-solid fa-user-plus"></i>เพิ่มผู้ดูแล/Staff ใหม่
+            </button>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="mb-4">
+              <div class="relative">
+                <input type="text" id="admin-user-search" onkeyup="renderAdminUsersTable()" placeholder="ค้นหาไอดี หรือชื่อผู้ใช้งาน..." class="form-input pl-12">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            <div class="no-scrollbar overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-gray-800 text-white">
+                  <tr>
+                    <th class="px-6 py-4">ไอดีผู้ใช้งาน (UserID)</th>
+                    <th class="px-6 py-4">ชื่อ-นามสกุล</th>
+                    <th class="px-6 py-4">สิทธิ์การใช้งาน (Role)</th>
+                    <th class="px-6 py-4">วันที่สร้าง</th>
+                    <th class="px-6 py-4 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       2. Report View Container (Standalone Report View)
+       ========================================== -->
+  <div id="reportViewContainer" class="hidden-section">
+    <main class="report-view-page">
+      <header class="report-header">
+        <div class="logo-frame" id="logoFrame" hidden><img id="logo" alt="ระบบยืม-คืนอุปกรณ์"></div>
+        <div class="header-copy">
+          <p class="organization">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+          <h1 id="reportTitle">กำลังจัดเตรียมรายงาน</h1>
+          <p class="generated-at" id="generatedAt"></p>
+        </div>
+      </header>
+      <section class="report-content" id="reportContent">
+        <div class="empty">กำลังโหลดข้อมูลรายงาน...</div>
+      </section>
+      <footer class="report-footer">ระบบยืม-คืน v1.0 | © 2026 มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</footer>
+      <div class="report-actions">
+        <button type="button" onclick="window.print()"><i class="fas fa-print mr-1"></i>พิมพ์รายงาน</button>
+        <button type="button" class="secondary" onclick="closeReportView()"><i class="fas fa-arrow-left mr-1"></i>กลับหน้าหลัก</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <!-- Image Zoom Modal -->
+  <div id="image-zoom-modal" class="image-zoom-modal" onclick="if(event.target===this) closeImageZoom()">
+    <div class="image-zoom-content">
+      <button class="image-zoom-close" onclick="closeImageZoom()"><i class="fas fa-times"></i></button>
+      <img id="zoomed-image" src="" alt="Zoomed Image">
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="qr-modal-overlay" onclick="if(event.target===this) closeQRModal()">
+    <div class="qr-modal-content">
+      <h2 style="color: var(--olive-dark); margin-bottom: 20px;"><i class="fas fa-qrcode mr-2"></i>สแกน QR Code เพื่อยืม</h2>
+      <div id="qr-canvas-container"></div>
+      <p id="qr-modal-name" style="font-weight: 600; margin: 15px 0;"></p>
+      <p class="text-sm text-gray-600 mb-4">สแกนด้วยกล้องมือถือเพื่อเข้าสู่หน้ายืมอุปกรณ์</p>
+      <button onclick="closeQRModal()" class="btn-olive mt-4"><i class="fas fa-times mr-2"></i>ปิด</button>
+    </div>
+  </div>
+
+  <!-- Borrow Form Modal -->
+  <div id="borrowModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-start justify-center px-4 py-6 no-print">
+    <div class="modal-content max-w-2xl w-full mx-auto my-4">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold"><i class="fa-solid fa-hand-holding-hand mr-2"></i>ฟอร์มขอยืมอุปกรณ์</h3>
+        <button onclick="closeModal()" class="text-white hover:text-gray-200 transition"><i class="fa-solid fa-xmark fa-lg"></i></button>
+      </div>
+      <form id="borrowForm" onsubmit="handleBorrowSubmit(event)" class="p-6 space-y-5 bg-white">
+        <input type="hidden" id="equipId" name="equipId">
+        <input type="hidden" id="equipName" name="equipName">
+        <input type="hidden" id="maxQty" name="maxQty">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-user mr-2" style="color: var(--olive-medium);"></i>ชื่อ-นามสกุล ผู้ยืม</label>
+          <input type="text" name="borrowerName" required class="form-input">
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-envelope mr-2" style="color: var(--olive-medium);"></i>อีเมล์</label>
+            <input type="email" name="email" required class="form-input" placeholder="example@email.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-phone mr-2" style="color: var(--olive-medium);"></i>เบอร์โทรศัพท์</label>
+            <input type="tel" name="phone" required class="form-input" placeholder="08x-xxx-xxxx">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-laptop-code mr-2" style="color: var(--olive-medium);"></i>อุปกรณ์ที่เลือก</label>
+          <div id="selectedItemsContainer" class="form-input bg-gray-50 text-gray-600 cursor-not-allowed p-3 min-h-[100px]"></div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-calendar-day mr-2" style="color: var(--olive-medium);"></i>กำหนดส่งคืน</label>
+          <input type="date" name="returnDate" required class="form-input">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-building mr-2" style="color: var(--olive-medium);"></i>ห้องที่ใช้ยืม</label>
+          <select name="borrowRoom" required class="form-input" onchange="toggleBorrowRoomOther(this)">
+            <option value="">-- กรุณาเลือกห้อง --</option>
+            <option value="ห้องสำนักงานละอออุทิศ">ห้องสำนักงานละอออุทิศ</option>
+            <option value="ห้องสำนักงานมหาวิทยาลัย">ห้องสำนักงานมหาวิทยาลัย</option>
+            <option value="ห้องครัวมหาวิทยาลัย">ห้องครัวมหาวิทยาลัย</option>
+            <option value="ห้องครัวละอออุทิศ">ห้องครัวละอออุทิศ</option>
+            <option value="__OTHER__">อื่นๆ</option>
+          </select>
+        </div>
+        <div id="borrowRoomOtherContainer" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-pen-to-square mr-2" style="color: var(--olive-medium);"></i>ระบุห้องที่ใช้ยืม</label>
+          <input type="text" name="borrowRoomOther" id="borrowRoomOther" class="form-input" placeholder="กรอกชื่อห้องอื่นๆ...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-comment-dots mr-2" style="color: var(--olive-medium);"></i>เหตุผลการยืม</label>
+          <textarea name="reason" rows="3" class="form-input" placeholder="ระบุเหตุผลในการยืม..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-signature mr-2" style="color: var(--olive-medium);"></i>ลายเซ็นผู้ยืม</label>
+          <div class="signature-canvas-wrap">
+            <canvas id="signatureCanvas"></canvas>
+          </div>
+          <div class="mt-2 flex justify-end">
+            <button type="button" onclick="clearSignature()" class="px-4 py-2 bg-sky-100 text-sky-800 rounded-lg hover:bg-sky-200 transition text-sm">
+              <i class="fa-solid fa-eraser mr-1"></i>ล้างลายเซ็น
+            </button>
+          </div>
+        </div>
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+          <div class="flex">
+            <div class="flex-shrink-0"><i class="fa-solid fa-bell text-yellow-400"></i></div>
+            <div class="ml-3">
+              <p class="text-sm text-yellow-700">
+                <input type="checkbox" id="emailNotification" checked class="mr-2">
+                <strong>รับการแจ้งเตือนทางอีเมล์</strong>
+              </p>
+              <p class="text-xs text-yellow-600 mt-1 ml-6">ระบบจะส่งอีเมล์เตือนก่อนครบกำหนดคืน 1 วัน</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8 flex justify-end space-x-4 pt-4 border-t">
+          <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"><i class="fa-solid fa-xmark mr-2"></i>ยกเลิก</button>
+          <button type="submit" id="borrowSubmitButton" class="btn-olive flex items-center gap-2"><i class="fa-solid fa-check"></i>ยืนยันการยืม</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Equipment Management Modal -->
+  <div id="equipModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-start justify-center px-4 py-6 no-print">
+    <div class="modal-content max-w-2xl w-full mx-auto my-6">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold" id="equipModalTitle"><i class="fa-solid fa-boxes-stacked mr-2"></i>จัดการอุปกรณ์</h3>
+        <button onclick="closeEquipModal()" class="text-white hover:text-gray-200 transition"><i class="fa-solid fa-xmark fa-lg"></i></button>
+      </div>
+      <form id="equipForm" onsubmit="handleEquipSubmit(event)" class="p-6 space-y-5 bg-white">
+        <input type="hidden" id="manageAction" name="action">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-hashtag mr-2" style="color: var(--olive-medium);"></i>รหัสอุปกรณ์ (ID)</label>
+            <input type="text" id="manageId" name="id" required class="form-input">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-layer-group mr-2" style="color: var(--olive-medium);"></i>หมวดอุปกรณ์</label>
+            <select id="manageCategory" name="category" required class="form-input">
+              <option value="" disabled selected>เลือกหมวดอุปกรณ์</option>
+              <option value="audiovisual">อุปกรณ์โสตทัศนูปกรณ์และคอมพิวเตอร์</option>
+              <option value="kitchen">อุปกรณ์ห้องครัวและประกอบอาหาร</option>
+              <option value="general">อุปกรณ์ทั่วไป</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-tag mr-2" style="color: var(--olive-medium);"></i>ชื่ออุปกรณ์</label>
+            <input type="text" id="manageName" name="name" required class="form-input">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-align-left mr-2" style="color: var(--olive-medium);"></i>รายละเอียด</label>
+            <textarea id="manageDescription" name="description" rows="2" class="form-input" placeholder="รายละเอียดเพิ่มเติมของอุปกรณ์..."></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-location-dot mr-2" style="color: var(--olive-medium);"></i>สถานที่เก็บ</label>
+            <select id="manageLocation" name="location" required class="form-input" onchange="updateStorageLocationOtherVisibility()">
+              <option value="">-- กรุณาเลือกห้อง --</option>
+              <option value="ห้องสำนักงานละอออุทิศ">ห้องสำนักงานละอออุทิศ</option>
+              <option value="ห้องสำนักงานมหาวิทยาลัย">ห้องสำนักงานมหาวิทยาลัย</option>
+              <option value="ห้องครัวมหาวิทยาลัย">ห้องครัวมหาวิทยาลัย</option>
+              <option value="ห้องครัวละอออุทิศ">ห้องครัวละอออุทิศ</option>
+              <option value="__OTHER__">อื่นๆ</option>
+            </select>
+            <div id="storageLocationOtherContainer" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2 mt-4"><i class="fa-solid fa-pen-to-square mr-2" style="color: var(--olive-medium);"></i>ระบุสถานที่เก็บอื่นๆ</label>
+              <input type="text" name="locationOther" id="locationOther" class="form-input" placeholder="กรอกชื่อสถานที่เก็บอื่นๆ...">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-boxes-packing mr-2" style="color: var(--olive-medium);"></i>จำนวนทั้งหมด</label>
+              <input type="number" id="manageTotal" name="total" min="0" required class="form-input">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-box-open mr-2" style="color: var(--olive-medium);"></i>จำนวนคงเหลือ</label>
+              <input type="number" id="manageAvailable" name="available" min="0" required class="form-input">
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-3"><i class="fa-solid fa-images mr-2" style="color: var(--olive-medium);"></i>รูปภาพอุปกรณ์</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-gray-500 mb-2">รูปที่ 1 (หลัก)</p>
+                <div class="file-upload-wrapper">
+                  <input type="file" id="imageInput1" name="image1" accept="image/*" class="file-upload-input" onchange="previewImage(this, 'preview1')">
+                  <label for="imageInput1" class="file-upload-label"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>เลือกรูปภาพ</label>
+                </div>
+                <div id="preview1Container" class="mt-2 hidden">
+                  <img id="preview1" class="image-preview" alt="Preview 1">
+                  <button type="button" onclick="removeImage('preview1')" class="text-red-500 text-xs mt-1"><i class="fa-solid fa-trash"></i> ลบรูป</button>
+                </div>
+                <input type="hidden" id="image1Url" name="image1Url">
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-2">รูปที่ 2 (รอง)</p>
+                <div class="file-upload-wrapper">
+                  <input type="file" id="imageInput2" name="image2" accept="image/*" class="file-upload-input" onchange="previewImage(this, 'preview2')">
+                  <label for="imageInput2" class="file-upload-label"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>เลือกรูปภาพ</label>
+                </div>
+                <div id="preview2Container" class="mt-2 hidden">
+                  <img id="preview2" class="image-preview" alt="Preview 2">
+                  <button type="button" onclick="removeImage('preview2')" class="text-red-500 text-xs mt-1"><i class="fa-solid fa-trash"></i> ลบรูป</button>
+                </div>
+                <input type="hidden" id="image2Url" name="image2Url">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8 flex justify-end space-x-4 pt-4 border-t">
+          <button type="button" onclick="closeEquipModal()" class="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"><i class="fa-solid fa-xmark mr-2"></i>ยกเลิก</button>
+          <button type="submit" class="btn-olive flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i>บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contact Modal -->
+  <div id="contactModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center px-4 no-print">
+    <div class="modal-content max-w-lg w-full mx-auto">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold"><i class="fa-solid fa-message mr-2"></i>ติดต่อสอบถาม</h3>
+        <button onclick="closeContactModal()" class="text-white hover:text-gray-200 transition"><i class="fa-solid fa-xmark fa-lg"></i></button>
+      </div>
+      <form id="contactForm" onsubmit="handleContactSubmit(event)" class="p-6 space-y-5 bg-white">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-user mr-2" style="color: var(--olive-medium);"></i>ชื่อ-นามสกุล</label>
+            <input type="text" name="name" required class="form-input" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-phone mr-2" style="color: var(--olive-medium);"></i>เบอร์โทร</label>
+            <input type="tel" name="phone" class="form-input" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-envelope mr-2" style="color: var(--olive-medium);"></i>อีเมล์</label>
+            <input type="email" name="email" class="form-input" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-tag mr-2" style="color: var(--olive-medium);"></i>หัวข้อ</label>
+            <input type="text" name="subject" class="form-input" placeholder="เรื่องที่ต้องการสอบถาม" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-comment-dots mr-2" style="color: var(--olive-medium);"></i>รายละเอียด</label>
+          <textarea name="message" rows="4" required class="form-input" placeholder="พิมพ์ข้อความของคุณ..."></textarea>
+        </div>
+        <div class="mt-6 flex justify-end gap-3 pt-4 border-t">
+          <button type="button" onclick="closeContactModal()" class="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"><i class="fa-solid fa-xmark mr-2"></i>ยกเลิก</button>
+          <button type="submit" class="btn-olive flex items-center gap-2"><i class="fa-solid fa-paper-plane"></i>ส่งข้อความ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
