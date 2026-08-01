@@ -756,6 +756,7 @@ function openBorrowModalFromCart() {
     `).join('');
   }
 
+  prefillBorrowRoomFromCart();
   if (modal) modal.classList.remove('hidden');
   clearSignature();
 }
@@ -770,6 +771,45 @@ function toggleBorrowRoomOther(selectEl) {
     if (selectEl.value === '__OTHER__') container.classList.remove('hidden');
     else container.classList.add('hidden');
   }
+}
+
+/** Prefill borrowRoom from equipment.location only when all cart items share one location. */
+function prefillBorrowRoomFromCart() {
+  const borrowRoomSelect = document.querySelector('#borrowModal select[name="borrowRoom"]');
+  const hintEl = document.getElementById('borrowRoomHint');
+  const otherInput = document.getElementById('borrowRoomOther');
+  if (!borrowRoomSelect || cart.length === 0) return;
+
+  const cartIds = cart.map(c => c.id);
+  const matched = equipmentData.filter(e => cartIds.includes(e.id));
+  const locations = [...new Set(matched.map(e => String(e.location || '').trim()).filter(Boolean))];
+
+  const setHint = (show) => {
+    if (!hintEl) return;
+    if (show) hintEl.classList.remove('hidden');
+    else hintEl.classList.add('hidden');
+  };
+
+  if (locations.length !== 1) {
+    borrowRoomSelect.value = '';
+    if (otherInput) otherInput.value = '';
+    toggleBorrowRoomOther(borrowRoomSelect);
+    setHint(locations.length > 1);
+    return;
+  }
+
+  const defaultRoom = locations[0];
+  const optionValues = Array.from(borrowRoomSelect.options).map(o => o.value);
+
+  if (optionValues.includes(defaultRoom)) {
+    borrowRoomSelect.value = defaultRoom;
+    if (otherInput) otherInput.value = '';
+  } else {
+    borrowRoomSelect.value = '__OTHER__';
+    if (otherInput) otherInput.value = defaultRoom;
+  }
+  toggleBorrowRoomOther(borrowRoomSelect);
+  setHint(false);
 }
 
 async function handleBorrowSubmit(event) {
