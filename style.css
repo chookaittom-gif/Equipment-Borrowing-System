@@ -1696,6 +1696,25 @@ body {
    Impeccable Polish: Vibrant Admin Dashboard UI & Icons
    ========================================== */
 
+/* Report Header Icon Box */
+.report-header-icon-box {
+  background: linear-gradient(135deg, #0284c7 0%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* Color Utilities for Section Icon Badges & Labels */
+.bg-emerald-100 { background-color: #d1fae5 !important; }
+.text-emerald-500 { color: #10b981 !important; }
+.text-emerald-600 { color: #059669 !important; }
+.text-emerald-700 { color: #047857 !important; }
+.bg-amber-100 { background-color: #fef3c7 !important; }
+.text-amber-500 { color: #f59e0b !important; }
+.text-amber-600 { color: #d97706 !important; }
+.text-amber-700 { color: #b45309 !important; }
+.bg-indigo-100 { background-color: #e0e7ff !important; }
+.text-indigo-600 { color: #4f46e5 !important; }
+
 /* Sidebar Menu Icon Palette */
 #menu-item-dashboard i { color: #38bdf8; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4)); }
 #menu-item-equipment i { color: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.4)); }
