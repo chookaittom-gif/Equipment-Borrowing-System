@@ -105,8 +105,12 @@ function doGet(e) {
       return createJsonResponse({ success: true, data: reportRes });
     }
 
+    if (!params.action) {
+      return serveFrontend();
+    }
+
     const req = parseRequestData(e);
-    const actionKey = req.action || 'getData';
+    const actionKey = req.action;
     const route = ACTION_ALLOWLIST[actionKey];
 
     if (!route) {
@@ -117,6 +121,26 @@ function doGet(e) {
   } catch (err) {
     return createErrorResponse('SERVER_ERROR', 'เกิดข้อผิดพลาดภายในระบบ');
   }
+}
+
+function serveFrontend() {
+  const apiUrl = getCleanWebAppUrl();
+  let html = HtmlService.createTemplateFromFile('index').getRawContent();
+  const css = HtmlService.createTemplateFromFile('style.css').getRawContent();
+  const js = HtmlService.createTemplateFromFile('app.js').getRawContent();
+  const configScript =
+    '<script>window.APP_CONFIG=window.APP_CONFIG||{};window.APP_CONFIG.apiUrl=' +
+    JSON.stringify(apiUrl) +
+    ';</script>';
+
+  html = html
+    .replace('<link rel="stylesheet" href="./style.css">', '<style>' + css + '</style>')
+    .replace(/<script>\s*window\.APP_CONFIG[\s\S]*?<\/script>/, configScript)
+    .replace('<script src="./app.js" defer></script>', '<script>' + js + '</script>');
+
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('ระบบยืม-คืนอุปกรณ์')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function doPost(e) {

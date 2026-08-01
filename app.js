@@ -5,9 +5,16 @@
  * ==========================================================================
  */
 
-const API_URL =
-  window.APP_CONFIG?.apiUrl ||
+const DEFAULT_API_URL =
   'https://script.google.com/macros/s/AKfycbzAJRYOIvx7x3Q-iMP2DF2sVHZ-y5lXw3u8XncxuGHQuXzJklrjG_eUQExCCETrn2cw/exec';
+
+function resolveApiUrl() {
+  const candidate = String(window.APP_CONFIG?.apiUrl || '').trim();
+  if (/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(candidate)) {
+    return candidate;
+  }
+  return DEFAULT_API_URL;
+}
 
 // ==========================================
 // Centralized API Client (Fetch + AbortController + Timeout + Retries)
@@ -23,6 +30,7 @@ async function apiRequest(action, payload = {}, options = {}) {
   const timeoutMs = options.timeout || API_DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const apiUrl = resolveApiUrl();
 
   try {
     const isPost = options.method === 'POST' || [
@@ -35,7 +43,7 @@ async function apiRequest(action, payload = {}, options = {}) {
     if (isPost) {
       // Use text/plain body to prevent CORS preflight OPTIONS block on script.google.com
       const postBody = JSON.stringify({ action, payload });
-      response = await fetch(API_URL, {
+      response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: postBody,
@@ -46,7 +54,7 @@ async function apiRequest(action, payload = {}, options = {}) {
         action: action,
         payload: JSON.stringify(payload)
       });
-      response = await fetch(`${API_URL}?${queryParams.toString()}`, {
+      response = await fetch(`${apiUrl}?${queryParams.toString()}`, {
         method: 'GET',
         signal: controller.signal
       });
@@ -55,6 +63,9 @@ async function apiRequest(action, payload = {}, options = {}) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('ไม่พบ Backend API (404) กรุณา Deploy Google Apps Script ใหม่และตรวจสอบ URL ใน APP_CONFIG');
+      }
       throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
     }
 
