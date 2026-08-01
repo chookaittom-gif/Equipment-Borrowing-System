@@ -2133,6 +2133,7 @@ body {
   border: none;
   font-size: 0.975rem;
   letter-spacing: 0.01em;
+  gap: 1.25rem; /* 20px: icon box ↔ label */
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .btn-report-export:hover {
@@ -2140,6 +2141,17 @@ body {
 }
 .btn-report-export:active {
   transform: translateY(0);
+}
+.btn-report-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
 }
 .btn-report-all {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
