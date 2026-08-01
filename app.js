@@ -1122,6 +1122,35 @@ function checkAdminSession() {
   }
 }
 
+function buildPasswordFieldHtml(inputId, toggleId, label, placeholder, autocomplete = 'current-password') {
+  return `
+    <div class="password-field">
+      <label class="block text-sm font-semibold text-gray-700 mb-1">${label}</label>
+      <div class="password-field-wrap">
+        <input type="password" id="${inputId}" class="swal2-input password-field-input" style="width:100%;margin:0;" placeholder="${placeholder}" autocomplete="${autocomplete}">
+        <button type="button" id="${toggleId}" class="password-toggle-btn" aria-label="แสดงรหัสผ่าน" aria-pressed="false">
+          <i class="fa-solid fa-eye" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+function bindPasswordToggle(inputId, toggleId) {
+  const input = document.getElementById(inputId);
+  const toggleBtn = document.getElementById(toggleId);
+  if (!input || !toggleBtn) return;
+
+  toggleBtn.addEventListener('click', () => {
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    toggleBtn.setAttribute('aria-pressed', showing ? 'false' : 'true');
+    toggleBtn.setAttribute('aria-label', showing ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน');
+    toggleBtn.innerHTML = showing
+      ? '<i class="fa-solid fa-eye" aria-hidden="true"></i>'
+      : '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>';
+  });
+}
+
 function openAdminLoginModal() {
   Swal.fire({
     title: '<i class="fas fa-lock text-sky-700 mr-2"></i>เข้าสู่ระบบผู้ดูแลระบบ',
@@ -1129,17 +1158,18 @@ function openAdminLoginModal() {
       <div class="text-left space-y-4 pt-2">
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">ไอดีผู้ใช้ (UserID)</label>
-          <input type="text" id="swal-admin-id" class="swal2-input" style="width: 100%; margin: 0;" placeholder="กรอก UserID">
+          <input type="text" id="swal-admin-id" class="swal2-input" style="width: 100%; margin: 0;" placeholder="กรอก UserID" autocomplete="username">
         </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">รหัสผ่าน (PIN)</label>
-          <input type="password" id="swal-admin-pin" class="swal2-input" style="width: 100%; margin: 0;" placeholder="กรอกรหัสผ่าน">
-        </div>
+        ${buildPasswordFieldHtml('swal-admin-pin', 'swal-admin-pin-toggle', 'รหัสผ่าน (PIN)', 'กรอกรหัสผ่าน')}
       </div>`,
     showCancelButton: true,
     confirmButtonText: 'เข้าสู่ระบบ',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#0284c7',
+    didOpen: () => {
+      bindPasswordToggle('swal-admin-pin', 'swal-admin-pin-toggle');
+      document.getElementById('swal-admin-id')?.focus();
+    },
     preConfirm: () => {
       const inputId = document.getElementById('swal-admin-id').value;
       const inputPin = document.getElementById('swal-admin-pin').value;
@@ -1665,10 +1695,7 @@ function openUserModal() {
           <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล</label>
           <input type="text" id="swal-user-name" class="swal2-input" style="width:100%;margin:0;" placeholder="กรอกชื่อ-นามสกุล">
         </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">รหัสผ่าน (PIN)</label>
-          <input type="password" id="swal-user-pin" class="swal2-input" style="width:100%;margin:0;" placeholder="ตั้งรหัสผ่าน">
-        </div>
+        ${buildPasswordFieldHtml('swal-user-pin', 'swal-user-pin-toggle', 'รหัสผ่าน (PIN)', 'ตั้งรหัสผ่าน', 'new-password')}
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">สิทธิ์การใช้งาน (Role)</label>
           <select id="swal-user-role" class="swal2-input" style="width:100%;margin:0;">
@@ -1681,6 +1708,9 @@ function openUserModal() {
     confirmButtonText: 'บันทึกผู้ใช้',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#059669',
+    didOpen: () => {
+      bindPasswordToggle('swal-user-pin', 'swal-user-pin-toggle');
+    },
     preConfirm: () => {
       const userId = document.getElementById('swal-user-id').value.trim();
       const name = document.getElementById('swal-user-name').value.trim();

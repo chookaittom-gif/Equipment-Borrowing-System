@@ -2192,4 +2192,48 @@ body {
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Admin PIN visibility toggle (login + add user) */
+.password-field-wrap {
+  position: relative;
+}
+
+.password-field-input {
+  padding-right: 2.75rem !important;
+  box-sizing: border-box;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.35rem;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 1rem;
+  border-radius: 8px;
+  transition: color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out);
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary-dark);
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .password-toggle-btn {
+    transition: none;
+  }
+}
 
