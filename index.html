@@ -706,29 +706,60 @@
             </div>
           </div>
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-3"><i class="fa-solid fa-images mr-2" style="color: var(--olive-medium);"></i>รูปภาพอุปกรณ์</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-images text-sky-600"></i>รูปภาพอุปกรณ์
+            </label>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p class="text-xs text-gray-500 mb-2">รูปที่ 1 (หลัก)</p>
+              <!-- Image 1 Dropzone & Preview -->
+              <div class="upload-field-card">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-600">รูปที่ 1 (หลัก)</span>
+                  <span class="text-[10px] text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100 font-medium">รูปภาพหน้าปก</span>
+                </div>
                 <div class="file-upload-wrapper">
                   <input type="file" id="imageInput1" name="image1" accept="image/*" class="file-upload-input" onchange="previewImage(this, 'preview1')">
-                  <label for="imageInput1" class="file-upload-label"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>เลือกรูปภาพ</label>
+                  <label for="imageInput1" class="file-upload-label">
+                    <div class="upload-icon-circle">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <span class="upload-text-main">คลิกเพื่ออัปโหลดรูปหลัก</span>
+                    <span class="upload-text-sub">PNG, JPG, WEBP ขนาดไม่เกิน 5MB</span>
+                  </label>
                 </div>
-                <div id="preview1Container" class="mt-2 hidden">
-                  <img id="preview1" class="image-preview" alt="Preview 1">
-                  <button type="button" onclick="removeImage('preview1')" class="text-red-500 text-xs mt-1"><i class="fa-solid fa-trash"></i> ลบรูป</button>
+                <div id="preview1Container" class="image-preview-card hidden">
+                  <div class="preview-img-wrapper">
+                    <img id="preview1" class="image-preview" alt="Preview 1">
+                  </div>
+                  <button type="button" onclick="removeImage('preview1')" class="btn-remove-image">
+                    <i class="fa-solid fa-trash-can"></i> ลบรูปภาพ
+                  </button>
                 </div>
                 <input type="hidden" id="image1Url" name="image1Url">
               </div>
-              <div>
-                <p class="text-xs text-gray-500 mb-2">รูปที่ 2 (รอง)</p>
+
+              <!-- Image 2 Dropzone & Preview -->
+              <div class="upload-field-card">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-600">รูปที่ 2 (รอง)</span>
+                  <span class="text-[10px] text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200 font-medium">ภาพมุมอื่น/อุปกรณ์ร่วม</span>
+                </div>
                 <div class="file-upload-wrapper">
                   <input type="file" id="imageInput2" name="image2" accept="image/*" class="file-upload-input" onchange="previewImage(this, 'preview2')">
-                  <label for="imageInput2" class="file-upload-label"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>เลือกรูปภาพ</label>
+                  <label for="imageInput2" class="file-upload-label">
+                    <div class="upload-icon-circle">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <span class="upload-text-main">คลิกเพื่ออัปโหลดรูปรอง</span>
+                    <span class="upload-text-sub">PNG, JPG, WEBP ขนาดไม่เกิน 5MB</span>
+                  </label>
                 </div>
-                <div id="preview2Container" class="mt-2 hidden">
-                  <img id="preview2" class="image-preview" alt="Preview 2">
-                  <button type="button" onclick="removeImage('preview2')" class="text-red-500 text-xs mt-1"><i class="fa-solid fa-trash"></i> ลบรูป</button>
+                <div id="preview2Container" class="image-preview-card hidden">
+                  <div class="preview-img-wrapper">
+                    <img id="preview2" class="image-preview" alt="Preview 2">
+                  </div>
+                  <button type="button" onclick="removeImage('preview2')" class="btn-remove-image">
+                    <i class="fa-solid fa-trash-can"></i> ลบรูปภาพ
+                  </button>
                 </div>
                 <input type="hidden" id="image2Url" name="image2Url">
               </div>

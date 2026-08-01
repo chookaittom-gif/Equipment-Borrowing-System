@@ -314,6 +314,47 @@ function formatImageUrl(rawUrl) {
   return url;
 }
 
+function getSampleEquipmentImage(item) {
+  if (!item) return '';
+  const formatted1 = formatImageUrl(item.image1);
+  if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
+  const formatted2 = formatImageUrl(item.image2);
+  if (formatted2 && formatted2.length > 5 && !formatted2.includes('fallbackSvg')) return formatted2;
+
+  const name = (item.name || '').toLowerCase();
+  const cat = (item.category || '').toLowerCase();
+
+  if (name.includes('ฟอกอากาศ') || name.includes('air purifier')) {
+    return 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('แม็ค') || name.includes('mac') || name.includes('คอมพิวเตอร์') || name.includes('pc') || name.includes('ตั้งโต๊ะ') || name.includes('โน้ตบุ๊ก')) {
+    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
+    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('หม้อ') || name.includes('ต้ม')) {
+    return 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('กระทะ') || name.includes('ผัด')) {
+    return 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('กะละมัง') || name.includes('สแตนเลส') || name.includes('ถ้วย') || name.includes('ชาม') || name.includes('กระบวย') || name.includes('ตะหลิว') || name.includes('ทัพพี')) {
+    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80';
+  }
+
+  if (cat === 'audiovisual') {
+    return 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80';
+  }
+  if (cat === 'kitchen') {
+    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80';
+}
+
 function renderEquipmentGrid() {
   const grid = document.getElementById('equipment-grid');
   if (!grid) return;
@@ -346,8 +387,7 @@ function renderEquipmentGrid() {
 
     const catLabel = categoryLabels[item.category] || item.category || 'ทั่วไป';
     const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Sarabun, sans-serif' font-size='16' fill='%2394a3b8'%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E";
-    const formattedUrl = formatImageUrl(item.image1 || item.image2);
-    const imgUrl = formattedUrl || fallbackSvg;
+    const imgUrl = getSampleEquipmentImage(item) || fallbackSvg;
 
     return `
       <div class="equipment-card">
@@ -467,7 +507,7 @@ function addToCart(equipId) {
   if (existing) {
     if (existing.qty < available) existing.qty += 1;
   } else {
-    cart.push({ id: item.id, name: item.name, image: item.image1 || item.image2 || '', qty: 1, maxQty: available });
+    cart.push({ id: item.id, name: item.name, image: getSampleEquipmentImage(item), qty: 1, maxQty: available });
   }
 
   updateCartBadge();
