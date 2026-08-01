@@ -324,19 +324,27 @@ function renderEquipmentGrid() {
     const isAvailable = available > 0;
     const isCartAdded = cart.some(c => c.id === item.id);
 
-    const imgUrl = item.image1 || item.image2 || 'https://via.placeholder.com/400x250?text=No+Image';
+    const categoryLabels = {
+      audiovisual: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์',
+      kitchen: 'ห้องครัว & ประกอบอาหาร',
+      general: 'ทั่วไป'
+    };
+
+    const catLabel = categoryLabels[item.category] || item.category || 'ทั่วไป';
+    const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Sarabun, sans-serif' font-size='16' fill='%2394a3b8'%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E";
+    const imgUrl = item.image1 || item.image2 || fallbackSvg;
 
     return `
       <div class="equipment-card">
         <div class="image-gallery">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onclick="zoomImage('${escapeHtml(imgUrl)}')">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" onerror="this.onerror=null;this.src='${fallbackSvg}';" onclick="zoomImage(this.src)">
           <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')">
             <i class="fa-solid fa-qrcode text-sky-700 text-xl"></i>
           </div>
         </div>
         <div class="p-5 equipment-card-content">
           <div class="flex items-center justify-between mb-2">
-            <span class="category-badge">${escapeHtml(item.category || 'general')}</span>
+            <span class="category-badge">${escapeHtml(catLabel)}</span>
             <span class="text-xs font-mono font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded-md border border-sky-200">${escapeHtml(item.id)}</span>
           </div>
           <h3 class="text-lg font-bold text-gray-800 equipment-card-title mb-1">${escapeHtml(item.name)}</h3>

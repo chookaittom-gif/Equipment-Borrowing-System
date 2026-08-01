@@ -52,6 +52,14 @@ html, body {
   overflow-x: clip;
 }
 
+.hidden-section {
+  display: none !important;
+}
+
+#admin-layout.hidden-section .admin-sidebar {
+  display: none !important;
+}
+
 body {
   font-family: 'Sarabun', sans-serif;
   background: linear-gradient(135deg, var(--background) 0%, var(--primary-pale) 100%);
