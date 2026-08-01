@@ -1944,22 +1944,50 @@ async function handleContactSubmit(event) {
 // ==========================================
 // Standalone Report View Integration (Report.html merged)
 // ==========================================
+function getReportEmptyMessage(reportType) {
+  const type = String(reportType || 'all');
+  if (type === 'monthly') return 'ไม่มีรายการยืm-คืnในเดือนนี้ ไม่ต้องเปิดรายงาน';
+  if (type === 'borrowing') return 'ไม่มีรายการที่กำลังยืm ไม่ต้องเปิดรายงาน';
+  if (type === 'daily') return 'ไม่มีรายการยืm-คืnในวันนี้ ไม่ต้องเปิดรายงาน';
+  if (type === 'yearly') return 'ไม่มีรายการยืm-คืnในปีนี้ ไม่ต้องเปิดรายงาน';
+  return 'ยังไม่มีรายการยืm-คืnในระบบ ไม่ต้องเปิดรายงาน';
+}
+
 async function openReportView(reportType = 'all') {
   const mainApp = document.getElementById('mainAppContainer');
   const reportView = document.getElementById('reportViewContainer');
-  const reportContent = document.getElementById('reportContent');
-
-  if (mainApp) mainApp.classList.add('hidden-section');
-  if (reportView) reportView.classList.remove('hidden-section');
-  if (reportContent) reportContent.innerHTML = '<div class="empty">กำลังโหลดข้อมูลรายงาน...</div>';
 
   try {
+    Swal.fire({
+      title: 'กำลังตรวจสอบรายงาน...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const reportData = await apiRequest('getReportData', { reportType });
+    Swal.close();
+
+    const transactions = reportData?.transactions || [];
+    if (reportData?.status !== 'success' || transactions.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'ไม่มีรายงาน',
+        text: getReportEmptyMessage(reportType),
+        confirmButtonText: 'ตกลง'
+      });
+      if (reportView) reportView.classList.add('hidden-section');
+      if (mainApp) mainApp.classList.remove('hidden-section');
+      return;
+    }
+
+    if (mainApp) mainApp.classList.add('hidden-section');
+    if (reportView) reportView.classList.remove('hidden-section');
     renderReportContent(reportData);
   } catch (err) {
-    if (reportContent) {
-      reportContent.innerHTML = `<div class="error">ไม่สามารถดึงข้อมูลรายงานได้: ${escapeHtml(err.message)}</div>`;
-    }
+    Swal.close();
+    if (reportView) reportView.classList.add('hidden-section');
+    if (mainApp) mainApp.classList.remove('hidden-section');
+    Swal.fire('ไม่สามารถโหลดรายงาน', err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลรายงาน', 'error');
   }
 }
 
