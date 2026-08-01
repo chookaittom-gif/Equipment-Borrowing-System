@@ -449,12 +449,9 @@ function renderEquipmentGrid() {
 
     return `
       <div class="equipment-card">
-        <div class="image-gallery">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" title="ดูภาพอุปกรณ์ขนาดเต็ม" onerror="handleEquipmentImageError(this)" onclick="zoomImage(this.src)">
-          <button type="button" class="equipment-image-expand" data-src="${escapeHtml(imgUrl)}" onclick="zoomImage(this.dataset.src)" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม" title="ดูภาพอุปกรณ์ขนาดเต็ม">
-            <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
-          </button>
-          <div class="qr-badge" onclick="showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
+        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+          <div class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
         </div>
@@ -504,6 +501,18 @@ function updatePagination(totalPages) {
 function changePage(direction) {
   currentPage += direction;
   renderEquipmentGrid();
+}
+
+function openEquipmentImageFromGallery(el) {
+  const url = String(el?.dataset?.src || '').trim();
+  if (url) zoomImage(url);
+}
+
+function handleEquipmentImageGalleryKeydown(event, el) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    openEquipmentImageFromGallery(el);
+  }
 }
 
 function zoomImage(url) {
