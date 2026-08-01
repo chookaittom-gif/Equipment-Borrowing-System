@@ -260,6 +260,15 @@ function updateDashboardStats() {
   document.getElementById('stat-today').textContent = todayCount;
 }
 
+function getCategoryLabel(cat) {
+  const categoryLabels = {
+    audiovisual: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์',
+    kitchen: 'ห้องครัว & ประกอบอาหาร',
+    general: 'ทั่วไป'
+  };
+  return categoryLabels[cat] || cat || 'ทั่วไป';
+}
+
 function renderCategoryFilters() {
   const container = document.getElementById('category-filter-container');
   if (!container) return;
@@ -379,13 +388,7 @@ function renderEquipmentGrid() {
     const isAvailable = available > 0;
     const isCartAdded = cart.some(c => c.id === item.id);
 
-    const categoryLabels = {
-      audiovisual: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์',
-      kitchen: 'ห้องครัว & ประกอบอาหาร',
-      general: 'ทั่วไป'
-    };
-
-    const catLabel = categoryLabels[item.category] || item.category || 'ทั่วไป';
+    const catLabel = getCategoryLabel(item.category);
     const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Sarabun, sans-serif' font-size='16' fill='%2394a3b8'%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E";
     const imgUrl = getSampleEquipmentImage(item) || fallbackSvg;
 
@@ -971,16 +974,16 @@ function renderAdminEquipmentTable() {
     <tr class="table-row">
       <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(item.id)}</td>
       <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(item.name)}</td>
-      <td class="px-6 py-4"><span class="category-badge">${escapeHtml(item.category || 'general')}</span></td>
+      <td class="px-6 py-4"><span class="category-badge">${escapeHtml(getCategoryLabel(item.category))}</span></td>
       <td class="px-6 py-4">${escapeHtml(item.location || '-')}</td>
       <td class="px-6 py-4 text-center font-bold">${item.total}</td>
       <td class="px-6 py-4 text-center font-bold ${Number(item.available) > 0 ? 'text-green-600' : 'text-red-600'}">${item.available}</td>
       <td class="px-6 py-4 text-center">
-        <button onclick="openEquipModal('edit', '${escapeHtml(item.id)}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs mr-2 transition">
-          <i class="fas fa-edit"></i> แก้ไข
+        <button onclick="openEquipModal('edit', '${escapeHtml(item.id)}')" class="btn-action-edit mr-2">
+          <i class="fa-solid fa-pen-to-square"></i> แก้ไข
         </button>
-        <button onclick="deleteEquipmentConfirm('${escapeHtml(item.id)}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs transition">
-          <i class="fas fa-trash"></i> ลบ
+        <button onclick="deleteEquipmentConfirm('${escapeHtml(item.id)}')" class="btn-action-delete">
+          <i class="fa-solid fa-trash-can"></i> ลบ
         </button>
       </td>
     </tr>
@@ -1317,11 +1320,11 @@ function renderAdminUsersTable() {
       <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
       <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
       <td class="px-6 py-4 text-center">
-        <button onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs mr-2 transition">
-          <i class="fas fa-user-edit"></i> สิทธิ์
+        <button onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit mr-2">
+          <i class="fa-solid fa-user-pen"></i> สิทธิ์
         </button>
-        <button onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs transition">
-          <i class="fas fa-user-minus"></i> ลบ
+        <button onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
+          <i class="fa-solid fa-user-minus"></i> ลบ
         </button>
       </td>
     </tr>
