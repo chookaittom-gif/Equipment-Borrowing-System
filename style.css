@@ -1692,3 +1692,230 @@ body {
   border-color: #dc2626;
 }
 
+/* ==========================================
+   Impeccable Polish: Vibrant Admin Dashboard UI & Icons
+   ========================================== */
+
+/* Sidebar Menu Icon Palette */
+#menu-item-dashboard i { color: #38bdf8; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4)); }
+#menu-item-equipment i { color: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.4)); }
+#menu-item-transactions i { color: #fbbf24; filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4)); }
+#menu-item-reports i { color: #818cf8; filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.4)); }
+#menu-item-users i { color: #2dd4bf; filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.4)); }
+.sidebar-menu .menu-item[onclick*="logoutAdmin"] i { color: #fb7185; filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.4)); }
+
+/* Modern Stat Cards (Vibrant Gradients, Badges & Micro-animations) */
+.modern-stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 18px -4px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+  z-index: 1;
+}
+
+.modern-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px -8px rgba(15, 23, 42, 0.12), 0 6px 12px -4px rgba(15, 23, 42, 0.06);
+}
+
+.modern-stat-card .decorative-circle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.12;
+  transition: transform 0.35s ease;
+}
+
+.modern-stat-card .circle-1 {
+  width: 120px;
+  height: 120px;
+  top: -35px;
+  right: -35px;
+  background: currentColor;
+}
+
+.modern-stat-card .circle-2 {
+  width: 80px;
+  height: 80px;
+  bottom: -25px;
+  right: 15px;
+  background: currentColor;
+}
+
+.modern-stat-card:hover .decorative-circle {
+  transform: scale(1.2);
+}
+
+.modern-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.modern-card-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.modern-stat-card:hover .modern-card-icon {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.modern-card-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: -0.01em;
+}
+
+.modern-card-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.025em;
+}
+
+.modern-card-unit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Card Themes with Vibrant Accent Lines & Gradient Glows */
+.modern-stat-card.card-total {
+  color: #0284c7;
+  border-left: 4px solid #0284c7;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+.modern-stat-card.card-total .modern-card-icon {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+}
+.modern-stat-card.card-total .modern-card-value {
+  color: #0369a1;
+}
+
+.modern-stat-card.card-returned {
+  color: #10b981;
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+}
+.modern-stat-card.card-returned .modern-card-icon {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+.modern-stat-card.card-returned .modern-card-value {
+  color: #047857;
+}
+
+.modern-stat-card.card-borrowing {
+  color: #f59e0b;
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+.modern-stat-card.card-borrowing .modern-card-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+}
+.modern-stat-card.card-borrowing .modern-card-value {
+  color: #b45309;
+}
+
+.modern-stat-card.card-overdue {
+  color: #ef4444;
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+}
+.modern-stat-card.card-overdue .modern-card-icon {
+  background: linear-gradient(135deg, #ef4444 0%, #be123c 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+}
+.modern-stat-card.card-overdue .modern-card-value {
+  color: #be123c;
+}
+
+/* Report Action Buttons */
+.btn-report-export {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  font-size: 0.975rem;
+  letter-spacing: 0.01em;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-report-export:hover {
+  transform: translateY(-2px);
+}
+.btn-report-export:active {
+  transform: translateY(0);
+}
+.btn-report-all {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+}
+.btn-report-all:hover {
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.45);
+}
+.btn-report-monthly {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+.btn-report-monthly:hover {
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.45);
+}
+.btn-report-borrowing {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+}
+.btn-report-borrowing:hover {
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.45);
+}
+
+/* Popular Items & Usage Bar Styles */
+.popular-rank-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+.popular-rank-1 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); }
+.popular-rank-2 { background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(148, 163, 184, 0.35); }
+.popular-rank-3 { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35); }
+.popular-rank-other { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+.usage-progress-bar {
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.usage-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+

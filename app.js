@@ -1467,6 +1467,73 @@ function renderAdminReports() {
   document.getElementById('report-borrowing').textContent = borrowing;
   document.getElementById('report-overdue').textContent = 0;
 
+  // Render Usage Stats Progress Bars
+  const usageStatsContainer = document.getElementById('usage-stats');
+  if (usageStatsContainer) {
+    const returnedPct = total > 0 ? Math.round((returned / total) * 100) : 0;
+    const borrowingPct = total > 0 ? Math.round((borrowing / total) * 100) : 0;
+    
+    usageStatsContainer.innerHTML = `
+      <div>
+        <div class="flex justify-between items-center text-sm font-semibold mb-1.5">
+          <span class="text-gray-700 flex items-center gap-2"><i class="fas fa-check-circle text-emerald-500"></i> คืนแล้ว</span>
+          <span class="text-emerald-700 font-bold">${returned} รายการ (${returnedPct}%)</span>
+        </div>
+        <div class="usage-progress-bar">
+          <div class="usage-progress-fill bg-gradient-to-r from-emerald-500 to-teal-400" style="width: ${returnedPct}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between items-center text-sm font-semibold mb-1.5">
+          <span class="text-gray-700 flex items-center gap-2"><i class="fas fa-hourglass-half text-amber-500"></i> กำลังยืม</span>
+          <span class="text-amber-700 font-bold">${borrowing} รายการ (${borrowingPct}%)</span>
+        </div>
+        <div class="usage-progress-bar">
+          <div class="usage-progress-fill bg-gradient-to-r from-amber-500 to-orange-400" style="width: ${borrowingPct}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Popular Equipment (Top 5)
+  const popularContainer = document.getElementById('popular-equipment');
+  if (popularContainer) {
+    const countsMap = {};
+    transactionData.forEach(t => {
+      const name = t.equipName || 'ไม่ระบุชื่อ';
+      countsMap[name] = (countsMap[name] || 0) + 1;
+    });
+
+    const sorted = Object.entries(countsMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    if (sorted.length === 0) {
+      popularContainer.innerHTML = '<div class="text-sm text-gray-500 py-3 text-center">ยังไม่มีข้อมูลการยืมอุปกรณ์</div>';
+    } else {
+      const maxCount = sorted[0][1] || 1;
+      popularContainer.innerHTML = sorted.map(([name, count], idx) => {
+        const rankClass = idx === 0 ? 'popular-rank-1' : idx === 1 ? 'popular-rank-2' : idx === 2 ? 'popular-rank-3' : 'popular-rank-other';
+        const rankLabel = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
+        const barWidth = Math.round((count / maxCount) * 100);
+        return `
+          <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+            <div class="popular-rank-badge ${rankClass}">${rankLabel}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-bold text-gray-800 text-sm truncate">${escapeHtml(name)}</span>
+                <span class="text-xs font-semibold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/80">${count} ครั้ง</span>
+              </div>
+              <div class="usage-progress-bar">
+                <div class="usage-progress-fill bg-gradient-to-r from-sky-500 to-indigo-500" style="width: ${barWidth}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
   renderBorrowChart();
 }
 
@@ -1486,24 +1553,38 @@ function renderBorrowChart() {
     counts.push(transactionData.filter(t => t.dateBorrow === dateStr).length);
   }
 
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+  gradient.addColorStop(0, 'rgba(2, 132, 199, 0.35)');
+  gradient.addColorStop(1, 'rgba(2, 132, 199, 0.0)');
+
   borrowChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: days,
       datasets: [{
-        label: 'จำนวนการยืม',
+        label: 'จำนวนการยืม (รายการ)',
         data: counts,
         borderColor: '#0284c7',
-        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+        borderWidth: 3,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: '#0284c7',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        backgroundColor: gradient,
         fill: true,
-        tension: 0.3
+        tension: 0.35
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
       scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        x: { grid: { display: false }, ticks: { font: { family: 'Sarabun' } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, font: { family: 'Sarabun' } } }
       }
     }
   });

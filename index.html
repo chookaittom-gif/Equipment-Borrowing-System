@@ -417,7 +417,16 @@
 
         <!-- Reports Sub-view -->
         <div id="admin-reports" class="admin-section hidden-section">
-          <h1 class="text-3xl font-bold mb-6" style="color: var(--olive-dark);"><i class="fas fa-chart-bar mr-3"></i>รายงานและสถิติ</h1>
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-md">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold text-gray-800">รายงานและสถิติ</h1>
+              <p class="text-sm text-gray-500">สรุปข้อมูลภาพรวมการยืม-คืนอุปกรณ์และสถิติการใช้งาน</p>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="modern-stat-card card-total">
               <div class="decorative-circle circle-1"></div>
@@ -462,27 +471,48 @@
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-file-export mr-2"></i>ส่งออกรายงาน</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 class="text-lg font-bold mb-4 flex items-center gap-2.5 text-gray-800">
+                <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center text-sm"><i class="fas fa-file-export"></i></span>
+                <span>ส่งออกรายงาน</span>
+              </h3>
               <div class="space-y-3">
-                <button onclick="openReportView('all')" class="btn-olive w-full flex items-center justify-center gap-2"><i class="fas fa-print"></i>พิมพ์รายงานทั้งหมด</button>
-                <button onclick="openReportView('monthly')" class="btn-success w-full flex items-center justify-center gap-2"><i class="fas fa-calendar-alt"></i>รายงานเดือนปัจจุบัน</button>
-                <button onclick="openReportView('borrowing')" class="bg-yellow-500 hover:bg-yellow-600 text-white w-full px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition"><i class="fas fa-hand-holding"></i>รายการกำลังยืม</button>
+                <button onclick="openReportView('all')" class="btn-report-export btn-report-all w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-xl font-bold text-white shadow-md transition">
+                  <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center"><i class="fas fa-print"></i></div>
+                  <span>พิมพ์รายงานทั้งหมด</span>
+                </button>
+                <button onclick="openReportView('monthly')" class="btn-report-export btn-report-monthly w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-xl font-bold text-white shadow-md transition">
+                  <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center"><i class="fas fa-calendar-alt"></i></div>
+                  <span>รายงานเดือนปัจจุบัน</span>
+                </button>
+                <button onclick="openReportView('borrowing')" class="btn-report-export btn-report-borrowing w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-xl font-bold text-white shadow-md transition">
+                  <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center"><i class="fas fa-hand-holding"></i></div>
+                  <span>รายการกำลังยืม</span>
+                </button>
               </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-chart-pie mr-2"></i>สถิติการใช้งาน</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 class="text-lg font-bold mb-4 flex items-center gap-2.5 text-gray-800">
+                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fas fa-chart-pie"></i></span>
+                <span>สถิติการใช้งาน</span>
+              </h3>
               <div id="usage-stats" class="space-y-4"></div>
             </div>
           </div>
 
-          <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
-            <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-trophy mr-2"></i>อุปกรณ์ยอดนิยม (Top 5)</h3>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2.5 text-gray-800">
+              <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-trophy"></i></span>
+              <span>อุปกรณ์ยอดนิยม (Top 5)</span>
+            </h3>
             <div id="popular-equipment" class="space-y-3"></div>
           </div>
 
-          <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h3 class="text-lg font-bold mb-4 flex items-center" style="color: var(--olive-dark);"><i class="fas fa-chart-line mr-2"></i>สถิติการยืม 7 วันล่าสุด</h3>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2.5 text-gray-800">
+              <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm"><i class="fas fa-chart-line"></i></span>
+              <span>สถิติการยืม 7 วันล่าสุด</span>
+            </h3>
             <div id="chart-container" class="h-64"><canvas id="borrowChart"></canvas></div>
           </div>
         </div>
