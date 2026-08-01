@@ -12,8 +12,15 @@ const API_URL =
 // ==========================================
 // Centralized API Client (Fetch + AbortController + Timeout + Retries)
 // ==========================================
+const API_DEFAULT_TIMEOUT_MS = 90000;
+const API_HEAVY_TIMEOUT_MS = 120000;
+const ADMIN_SESSION_MS = 6 * 60 * 60 * 1000;
+const ADMIN_SESSION_CHECK_MS = 15000;
+const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
+const ADMIN_USER_KEY = 'adminUser';
+
 async function apiRequest(action, payload = {}, options = {}) {
-  const timeoutMs = options.timeout || 30000;
+  const timeoutMs = options.timeout || API_DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -182,6 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (view === 'report') {
     openReportView(reportType);
   } else {
+    checkAdminSession();
+    setInterval(checkAdminSession, ADMIN_SESSION_CHECK_MS);
     loadData();
     initSignatureCanvas();
     initFlatpickr();
@@ -918,6 +927,78 @@ function closeSignatureModal() {
 // ==========================================
 // Admin Login & Panel Management
 // ==========================================
+function persistAdminSession(user) {
+  try {
+    localStorage.setItem(ADMIN_SESSION_EXPIRY_KEY, String(Date.now() + ADMIN_SESSION_MS));
+    if (user) localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+  } catch (e) { /* ignore quota/private mode */ }
+}
+
+function clearAdminSessionStorage() {
+  try {
+    localStorage.removeItem(ADMIN_SESSION_EXPIRY_KEY);
+    localStorage.removeItem(ADMIN_USER_KEY);
+  } catch (e) { /* ignore */ }
+}
+
+function applyAdminSessionUser(user) {
+  currentUser = user || null;
+  isAdminMode = true;
+  const nameEl = document.getElementById('admin-user-name');
+  const roleEl = document.getElementById('admin-user-role');
+  if (nameEl) nameEl.textContent = (user && user.name) || '';
+  if (roleEl) roleEl.textContent = (user && user.role) || '';
+}
+
+function checkAdminSession() {
+  let sessionExpiry = null;
+  let storedUser = null;
+  try {
+    sessionExpiry = localStorage.getItem(ADMIN_SESSION_EXPIRY_KEY);
+    storedUser = localStorage.getItem(ADMIN_USER_KEY);
+  } catch (e) {
+    return;
+  }
+  if (!sessionExpiry) return;
+
+  const expiryTime = parseInt(sessionExpiry, 10);
+  if (!Number.isFinite(expiryTime)) {
+    clearAdminSessionStorage();
+    return;
+  }
+
+  if (Date.now() < expiryTime) {
+    if (!isAdminMode || !currentUser) {
+      let user = null;
+      if (storedUser) {
+        try { user = JSON.parse(storedUser); } catch (e) { user = null; }
+      }
+      applyAdminSessionUser(user);
+    }
+    return;
+  }
+
+  const wasAdmin = isAdminMode;
+  const adminLayout = document.getElementById('admin-layout');
+  const adminVisible = adminLayout && !adminLayout.classList.contains('hidden-section');
+  clearAdminSessionStorage();
+  isAdminMode = false;
+  currentUser = null;
+
+  if (wasAdmin || adminVisible) {
+    document.getElementById('admin-sidebar-overlay')?.classList.add('hidden');
+    document.getElementById('admin-sidebar')?.classList.remove('show-mobile');
+    switchTab('borrow');
+    Swal.fire({
+      icon: 'warning',
+      title: 'หมดเวลาการใช้งาน',
+      text: 'เซสชันการใช้งานผู้ดูแลระบบหมดอายุแล้ว (6 ชั่วโมง) กรุณาเข้าสู่ระบบใหม่อีกครั้ง',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#0284c7'
+    });
+  }
+}
+
 function openAdminLoginModal() {
   Swal.fire({
     title: '<i class="fas fa-lock text-sky-700 mr-2"></i>เข้าสู่ระบบผู้ดูแลระบบ',
@@ -951,10 +1032,8 @@ function openAdminLoginModal() {
       Swal.showLoading();
       const res = await apiRequest('verifyAdminPin', result.value);
       if (res && res.success) {
-        currentUser = res.user;
-        isAdminMode = true;
-        document.getElementById('admin-user-name').textContent = currentUser.name;
-        document.getElementById('admin-user-role').textContent = currentUser.role;
+        applyAdminSessionUser(res.user);
+        persistAdminSession(res.user);
 
         document.getElementById('user-layout')?.classList.add('hidden-section');
         document.getElementById('admin-layout')?.classList.remove('hidden-section');
@@ -971,6 +1050,7 @@ function openAdminLoginModal() {
 }
 
 function logoutAdmin() {
+  clearAdminSessionStorage();
   isAdminMode = false;
   currentUser = null;
   switchTab('borrow');
@@ -1343,7 +1423,7 @@ async function handleEquipSubmit(event) {
 
   try {
     Swal.showLoading();
-    await apiRequest('saveEquipment', payload);
+    await apiRequest('saveEquipment', payload, { timeout: API_HEAVY_TIMEOUT_MS });
     closeEquipModal();
     Swal.fire({ icon: 'success', title: 'บันทึกอุปกรณ์สำเร็จ', timer: 1200, showConfirmButton: false });
     loadData();
