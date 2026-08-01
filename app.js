@@ -472,7 +472,10 @@ function showQRCode(id, name) {
     new QRCode(container, {
       text: borrowUrl,
       width: 200,
-      height: 200
+      height: 200,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: typeof QRCode !== 'undefined' && QRCode.CorrectLevel ? QRCode.CorrectLevel.H : 2
     });
   }
   if (nameEl) nameEl.textContent = `${id} - ${name}`;
