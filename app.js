@@ -287,6 +287,22 @@ async function loadData() {
       renderCategoryFilters();
       filterEquipment();
       document.getElementById('borrow-section')?.classList.remove('hidden-section');
+
+      const adminLayout = document.getElementById('admin-layout');
+      if (adminLayout && !adminLayout.classList.contains('hidden-section')) {
+        if (!document.getElementById('admin-equipment')?.classList.contains('hidden-section')) {
+          renderAdminEquipmentTable();
+        }
+        if (!document.getElementById('admin-transactions')?.classList.contains('hidden-section')) {
+          renderAdminTransactionsTable();
+        }
+        if (!document.getElementById('admin-dashboard')?.classList.contains('hidden-section')) {
+          renderAdminDashboard();
+        }
+        if (!document.getElementById('admin-reports')?.classList.contains('hidden-section')) {
+          renderAdminReports();
+        }
+      }
     } else {
       throw new Error(res.message || 'ไม่สามารถโหลดข้อมูลได้');
     }
@@ -1516,13 +1532,30 @@ function openEquipModal(action, equipId = null) {
   if (action === 'edit' && equipId) {
     const item = equipmentData.find(e => e.id === equipId);
     if (!item) return;
-    title.innerHTML = `<i class="fa-solid fa-edit mr-2"></i>แก้ไขอุปกรณ์ (${item.id})`;
+    title.innerHTML = `<i class="fa-solid fa-edit mr-2"></i>แก้ไขอุปกรณ์ (${escapeHtml(item.id)})`;
+    document.getElementById('manageOriginalId').value = item.id;
     document.getElementById('manageId').value = item.id;
-    document.getElementById('manageId').readOnly = true;
+    document.getElementById('manageId').readOnly = false;
     document.getElementById('manageName').value = item.name;
     document.getElementById('manageCategory').value = item.category || 'general';
     document.getElementById('manageDescription').value = item.description || '';
-    document.getElementById('manageLocation').value = item.location || '';
+
+    const locationSelect = document.getElementById('manageLocation');
+    const locationOther = document.getElementById('locationOther');
+    const locationValue = String(item.location || '').trim();
+    const knownLocations = Array.from(locationSelect.options).map(o => o.value).filter(v => v && v !== '__OTHER__');
+    if (locationValue && knownLocations.includes(locationValue)) {
+      locationSelect.value = locationValue;
+      if (locationOther) locationOther.value = '';
+    } else if (locationValue) {
+      locationSelect.value = '__OTHER__';
+      if (locationOther) locationOther.value = locationValue;
+    } else {
+      locationSelect.value = '';
+      if (locationOther) locationOther.value = '';
+    }
+    updateStorageLocationOtherVisibility();
+
     document.getElementById('manageTotal').value = item.total;
     document.getElementById('manageAvailable').value = item.available;
 
@@ -1540,6 +1573,7 @@ function openEquipModal(action, equipId = null) {
     }
   } else {
     title.innerHTML = `<i class="fa-solid fa-plus mr-2"></i>เพิ่มอุปกรณ์ใหม่`;
+    document.getElementById('manageOriginalId').value = '';
     document.getElementById('manageId').readOnly = false;
   }
 
@@ -1595,14 +1629,26 @@ async function handleEquipSubmit(event) {
   let locationVal = form.location.value;
   if (locationVal === '__OTHER__') {
     locationVal = (form.locationOther.value || '').trim();
+    if (!locationVal) {
+      Swal.fire('กรุณาระบุสถานที่เก็บ', 'กรอกชื่อสถานที่เก็บอื่นๆ ให้ครบ', 'warning');
+      return;
+    }
   }
 
   const p1Img = document.getElementById('preview1')?.src || '';
   const p2Img = document.getElementById('preview2')?.src || '';
+  const newId = form.id.value.trim();
+  const originalId = (document.getElementById('manageOriginalId')?.value || '').trim() || newId;
+
+  if (!newId) {
+    Swal.fire('กรุณากรอกรหัสอุปกรณ์', 'รหัสอุปกรณ์ต้องไม่ว่าง', 'warning');
+    return;
+  }
 
   const payload = {
     action: action,
-    id: form.id.value.trim(),
+    id: newId,
+    originalId: action === 'edit' ? originalId : newId,
     name: form.name.value.trim(),
     category: form.category.value,
     description: form.description.value.trim(),

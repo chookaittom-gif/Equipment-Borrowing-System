@@ -1004,6 +1004,11 @@ function saveEquipment(data) {
     if (!EQUIPMENT_CATEGORIES.includes(category)) {
       throw new Error('กรุณาเลือกหมวดหมู่ที่กำหนด');
     }
+
+    const newId = String(data.id || '').trim();
+    const originalId = String(data.originalId || data.id || '').trim();
+    if (!newId) throw new Error('กรุณากรอกรหัสอุปกรณ์');
+
     const sheet = ss.getSheetByName(SHEET_EQUIPMENT);
     const allData = sheet.getDataRange().getValues();
 
@@ -1011,47 +1016,67 @@ function saveEquipment(data) {
     let image2Url = data.image2 || '';
 
     if (image1Url.startsWith('data:image')) {
-      image1Url = uploadImageToDrive(image1Url, 'equip_' + data.id + '_img1_' + Date.now() + '.jpg');
+      image1Url = uploadImageToDrive(image1Url, 'equip_' + newId + '_img1_' + Date.now() + '.jpg');
     }
 
     if (image2Url.startsWith('data:image')) {
-      image2Url = uploadImageToDrive(image2Url, 'equip_' + data.id + '_img2_' + Date.now() + '.jpg');
+      image2Url = uploadImageToDrive(image2Url, 'equip_' + newId + '_img2_' + Date.now() + '.jpg');
     }
 
     if (data.action === 'add') {
       for (let i = 1; i < allData.length; i++) {
-        if (String(allData[i][0]) === String(data.id)) {
+        if (String(allData[i][0]) === newId) {
           throw new Error('รหัสอุปกรณ์นี้มีอยู่ในระบบแล้ว');
         }
       }
 
-      const qrCode = generateQRCode(data.id, data.name);
+      const qrCode = generateQRCode(newId, data.name);
       sheet.appendRow([
-        data.id, data.name, data.total, data.available, data.location,
+        newId, data.name, data.total, data.available, data.location,
         image1Url, image2Url, category, data.description || '', qrCode
       ]);
 
     } else {
-      let found = false;
+      let rowIndex = -1;
       for (let i = 1; i < allData.length; i++) {
-        if (String(allData[i][0]) === String(data.id)) {
-          sheet.getRange(i + 1, 2).setValue(data.name);
-          sheet.getRange(i + 1, 3).setValue(data.total);
-          sheet.getRange(i + 1, 4).setValue(data.available);
-          sheet.getRange(i + 1, 5).setValue(data.location);
-          sheet.getRange(i + 1, 6).setValue(image1Url);
-          sheet.getRange(i + 1, 7).setValue(image2Url);
-          sheet.getRange(i + 1, 8).setValue(category);
-          sheet.getRange(i + 1, 9).setValue(data.description || '');
-
-          const newQrCode = generateQRCode(data.id, data.name);
-          sheet.getRange(i + 1, 10).setValue(newQrCode);
-
-          found = true;
+        if (String(allData[i][0]) === originalId) {
+          rowIndex = i + 1;
           break;
         }
       }
-      if (!found) throw new Error('ไม่พบรหัสอุปกรณ์ที่ต้องการแก้ไข');
+      if (rowIndex === -1) throw new Error('ไม่พบรหัสอุปกรณ์ที่ต้องการแก้ไข');
+
+      if (newId !== originalId) {
+        for (let i = 1; i < allData.length; i++) {
+          if (String(allData[i][0]) === newId) {
+            throw new Error('รหัสอุปกรณ์ใหม่ซ้ำกับอุปกรณ์อื่นในระบบ');
+          }
+        }
+
+        const transSheet = ss.getSheetByName(SHEET_TRANSACTIONS);
+        if (transSheet && transSheet.getLastRow() > 1) {
+          const transData = transSheet.getDataRange().getValues();
+          for (let i = 1; i < transData.length; i++) {
+            if (String(transData[i][4]) === originalId) {
+              throw new Error('ไม่สามารถเปลี่ยนรหัสได้ เพราะมีรายการยืมที่อ้างรหัสเดิมอยู่');
+            }
+          }
+        }
+
+        sheet.getRange(rowIndex, 1).setValue(newId);
+      }
+
+      sheet.getRange(rowIndex, 2).setValue(data.name);
+      sheet.getRange(rowIndex, 3).setValue(data.total);
+      sheet.getRange(rowIndex, 4).setValue(data.available);
+      sheet.getRange(rowIndex, 5).setValue(data.location);
+      sheet.getRange(rowIndex, 6).setValue(image1Url);
+      sheet.getRange(rowIndex, 7).setValue(image2Url);
+      sheet.getRange(rowIndex, 8).setValue(category);
+      sheet.getRange(rowIndex, 9).setValue(data.description || '');
+
+      const newQrCode = generateQRCode(newId, data.name);
+      sheet.getRange(rowIndex, 10).setValue(newQrCode);
     }
 
     return "Success";
