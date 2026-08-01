@@ -642,6 +642,7 @@ function addToCart(equipId) {
   }
 
   updateCartBadge();
+  renderCart();
   renderEquipmentGrid();
   Swal.fire({ icon: 'success', title: 'เพิ่มลงตะกร้าเรียบร้อย', timer: 1000, showConfirmButton: false });
 }
