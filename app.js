@@ -32,6 +32,7 @@ function resolveFrontendUrl() {
 const API_DEFAULT_TIMEOUT_MS = 90000;
 const API_HEAVY_TIMEOUT_MS = 120000;
 const API_404_RETRY_DELAY_MS = 1000;
+const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
 const ADMIN_SESSION_MS = 6 * 60 * 60 * 1000;
 const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
@@ -123,6 +124,7 @@ async function apiRequest(action, payload = {}, options = {}) {
 let equipmentData = [];
 let transactionData = [];
 let adminUsersData = [];
+let adminUsersLoadedAt = 0;
 let currentUser = null;
 let isAdminMode = false;
 const ITEMS_PER_PAGE = 10;
@@ -1702,14 +1704,21 @@ async function deleteEquipmentConfirm(id) {
 // ==========================================
 // Admin Users Management
 // ==========================================
-async function loadAdminUsersData() {
+async function loadAdminUsersData(options = {}) {
   const tbody = document.getElementById('admin-users-tbody');
   if (!tbody) return;
+  const forceRefresh = options.forceRefresh === true;
+
+  if (!forceRefresh && adminUsersLoadedAt && Date.now() - adminUsersLoadedAt < ADMIN_USERS_CACHE_MS) {
+    renderAdminUsersTable();
+    return;
+  }
 
   try {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังโหลดข้อมูล...</td></tr>';
     const res = await apiRequest('getUsers');
     adminUsersData = res.users || [];
+    adminUsersLoadedAt = Date.now();
     renderAdminUsersTable();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500">ไม่สามารถโหลดผู้ใช้: ${escapeHtml(err.message)}</td></tr>`;
@@ -1795,7 +1804,7 @@ function openUserModal() {
       Swal.showLoading();
       await apiRequest('saveUser', result.value);
       Swal.fire({ icon: 'success', title: 'เพิ่มผู้ใช้งานสำเร็จ', timer: 1200, showConfirmButton: false });
-      loadAdminUsersData();
+      loadAdminUsersData({ forceRefresh: true });
     } catch (err) {
       Swal.fire('เพิ่มผู้ใช้ไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการบันทึกผู้ใช้', 'error');
     }
@@ -1832,7 +1841,7 @@ function editUserRoleHandler(targetUserId) {
       Swal.showLoading();
       await apiRequest('updateUser', result.value);
       Swal.fire({ icon: 'success', title: 'อัปเดตสิทธิ์สำเร็จ', timer: 1200, showConfirmButton: false });
-      loadAdminUsersData();
+      loadAdminUsersData({ forceRefresh: true });
     } catch (err) {
       Swal.fire('อัปเดตไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการอัปเดตสิทธิ์', 'error');
     }
@@ -1861,7 +1870,7 @@ async function deleteUserHandler(targetUserId) {
       Swal.showLoading();
       await apiRequest('deleteUser', { targetUserId, currentUserId: currentU });
       Swal.fire({ icon: 'success', title: 'ลบผู้ใช้เรียบร้อยแล้ว', timer: 1200, showConfirmButton: false });
-      loadAdminUsersData();
+      loadAdminUsersData({ forceRefresh: true });
     } catch (err) {
       Swal.fire('ลบไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการลบผู้ใช้', 'error');
     }
