@@ -1529,7 +1529,6 @@ function getUsers() {
         users.push({
           userId: data[i][0],
           name: data[i][1],
-          pin: data[i][2] ? String(data[i][2]) : '',
           role: data[i][3] || 'Staff',
           createdAt: formatDate(data[i][4])
         });
