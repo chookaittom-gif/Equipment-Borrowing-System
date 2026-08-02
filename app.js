@@ -31,28 +31,76 @@ function resolveFrontendUrl() {
 // ==========================================
 const API_DEFAULT_TIMEOUT_MS = 90000;
 const API_HEAVY_TIMEOUT_MS = 120000;
-const API_404_RETRY_DELAY_MS = 1000;
+const API_MAX_GET_ATTEMPTS = 3;
+const API_RETRYABLE_HTTP = new Set([429, 500, 502, 503, 504]);
+const API_RETRYABLE_CODES = new Set(['SYSTEM_BUSY', 'TEMPORARY_ERROR', 'RATE_LIMITED']);
 const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
 const ADMIN_SESSION_MS = 6 * 60 * 60 * 1000;
 const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
 const ADMIN_USER_KEY = 'adminUser';
 
+function createApiError(message, fields) {
+  const err = new Error(message);
+  err.action = fields.action || null;
+  err.httpStatus = fields.httpStatus != null ? fields.httpStatus : null;
+  err.errorCode = fields.errorCode || null;
+  err.attempt = fields.attempt || 1;
+  return err;
+}
+
+function isNetworkFetchError(error) {
+  if (!error) return false;
+  if (error instanceof TypeError) return true;
+  const msg = String(error.message || '');
+  return /Failed to fetch|NetworkError|network|Load failed/i.test(msg);
+}
+
+async function waitApiRetry(attemptIndex, retryAfterHeader) {
+  if (retryAfterHeader != null && retryAfterHeader !== '') {
+    const sec = parseInt(retryAfterHeader, 10);
+    if (!isNaN(sec) && sec >= 0) {
+      await new Promise(resolve => setTimeout(resolve, sec * 1000));
+      return;
+    }
+  }
+  const baseMs = attemptIndex === 0 ? 500 : 1000;
+  const jitterMs = Math.floor(Math.random() * 200);
+  await new Promise(resolve => setTimeout(resolve, baseMs + jitterMs));
+}
+
 async function apiRequest(action, payload = {}, options = {}) {
   const timeoutMs = options.timeout || API_DEFAULT_TIMEOUT_MS;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const apiUrl = resolveApiUrl();
+  const isPost = options.method === 'POST' || [
+    'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
+    'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
+    'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm'
+  ].includes(action);
 
-  try {
-    const isPost = options.method === 'POST' || [
-      'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
-      'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
-      'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm'
-    ].includes(action);
+  const maxAttempts = isPost ? 1 : API_MAX_GET_ATTEMPTS;
+  let lastError = null;
 
-    let response;
-    for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let onExternalAbort = null;
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        clearTimeout(timeoutId);
+        throw createApiError('คำขอถูกยกเลิก', {
+          action,
+          errorCode: 'REQUEST_ABORTED',
+          attempt
+        });
+      }
+      onExternalAbort = () => controller.abort();
+      options.signal.addEventListener('abort', onExternalAbort, { once: true });
+    }
+
+    try {
+      let response;
       if (isPost) {
         // Use text/plain body to prevent CORS preflight OPTIONS block on script.google.com
         const postBody = JSON.stringify({ action, payload });
@@ -73,49 +121,138 @@ async function apiRequest(action, payload = {}, options = {}) {
         });
       }
 
-      if (isPost || response.status !== 404 || attempt === 1) break;
-      await new Promise(resolve => setTimeout(resolve, API_404_RETRY_DELAY_MS));
-    }
+      if (!response.ok) {
+        let errorCode = 'HTTP_ERROR';
+        let message = `HTTP Error: ${response.status} ${response.statusText}`;
+        if (response.status === 404) {
+          errorCode = 'NOT_FOUND';
+          message = 'ไม่พบ Backend API (404) กรุณา Deploy Google Apps Script ใหม่และตรวจสอบ URL ใน APP_CONFIG';
+        } else if (response.status === 429) {
+          errorCode = 'RATE_LIMITED';
+          message = 'คำขอถูกจำกัดชั่วคราว กรุณาลองใหม่อีกครั้ง';
+        } else if (API_RETRYABLE_HTTP.has(response.status)) {
+          errorCode = 'TEMPORARY_ERROR';
+          message = `เซิร์ฟเวอร์ไม่พร้อมชั่วคราว (${response.status}) กรุณาลองใหม่อีกครั้ง`;
+        }
 
-    clearTimeout(timeoutId);
+        const httpErr = createApiError(message, {
+          action,
+          httpStatus: response.status,
+          errorCode,
+          attempt
+        });
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('ไม่พบ Backend API (404) กรุณา Deploy Google Apps Script ใหม่และตรวจสอบ URL ใน APP_CONFIG');
+        if (!isPost && API_RETRYABLE_HTTP.has(response.status) && attempt < maxAttempts) {
+          lastError = httpErr;
+          await waitApiRetry(attempt - 1, response.headers.get('Retry-After'));
+          continue;
+        }
+        throw httpErr;
       }
-      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-    }
 
-    const text = await response.text();
-    if (!text || text.trim() === '') {
-      throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
-    }
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw createApiError('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์', {
+          action,
+          httpStatus: response.status,
+          errorCode: 'EMPTY_RESPONSE',
+          attempt
+        });
+      }
 
-    // Detect Google Apps Script HTML Redirect/Login Page
-    if (text.includes('<!DOCTYPE html>') || text.includes('<html') || text.includes('google-site-verification')) {
-      throw new Error('ระบบเซิร์ฟเวอร์ส่งกลับหน้า HTML ล็อกอิน กรุณาตั้งค่า GAS Web App Access เป็น Anyone');
-    }
+      // Detect Google Apps Script HTML Redirect/Login Page
+      if (text.includes('<!DOCTYPE html>') || text.includes('<html') || text.includes('google-site-verification')) {
+        throw createApiError('ระบบเซิร์ฟเวอร์ส่งกลับหน้า HTML ล็อกอิน กรุณาตั้งค่า GAS Web App Access เป็น Anyone', {
+          action,
+          httpStatus: response.status,
+          errorCode: 'HTML_RESPONSE',
+          attempt
+        });
+      }
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      throw new Error('รูปแบบข้อมูล JSON จากเซิร์ฟเวอร์ไม่ถูกต้อง');
-    }
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw createApiError('รูปแบบข้อมูล JSON จากเซิร์ฟเวอร์ไม่ถูกต้อง', {
+          action,
+          httpStatus: response.status,
+          errorCode: 'INVALID_JSON',
+          attempt
+        });
+      }
 
-    if (json.success === false) {
-      const errMsg = json.error?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
-      throw new Error(errMsg);
-    }
+      if (json.success === false) {
+        const code = json.error?.code || 'SERVER_ERROR';
+        const errMsg = json.error?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
+        const apiErr = createApiError(errMsg, {
+          action,
+          httpStatus: response.status,
+          errorCode: code,
+          attempt
+        });
 
-    return json.data !== undefined ? json.data : json;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('การเชื่อมต่อหมดเวลา (Timeout) กรุณาลองใหม่อีกครั้ง');
+        if (!isPost && API_RETRYABLE_CODES.has(code) && attempt < maxAttempts) {
+          lastError = apiErr;
+          await waitApiRetry(attempt - 1, null);
+          continue;
+        }
+        throw apiErr;
+      }
+
+      return json.data !== undefined ? json.data : json;
+    } catch (error) {
+      if (error && error.errorCode === 'REQUEST_ABORTED') {
+        throw error;
+      }
+
+      if (error && error.errorCode && !isNetworkFetchError(error) && error.name !== 'AbortError') {
+        throw error;
+      }
+
+      const abortedByTimeout = error && error.name === 'AbortError' && !(options.signal && options.signal.aborted);
+      const abortedByCaller = error && error.name === 'AbortError' && options.signal && options.signal.aborted;
+
+      if (abortedByCaller) {
+        throw createApiError('คำขอถูกยกเลิก', {
+          action,
+          errorCode: 'REQUEST_ABORTED',
+          attempt
+        });
+      }
+
+      const retryable = !isPost && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
+      const wrapped = createApiError(
+        abortedByTimeout
+          ? 'การเชื่อมต่อหมดเวลา (Timeout) กรุณาลองใหม่อีกครั้ง'
+          : (error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'),
+        {
+          action,
+          httpStatus: error.httpStatus != null ? error.httpStatus : null,
+          errorCode: abortedByTimeout ? 'TIMEOUT' : (error.errorCode || 'NETWORK_ERROR'),
+          attempt
+        }
+      );
+
+      if (retryable) {
+        lastError = wrapped;
+        await waitApiRetry(attempt - 1, null);
+        continue;
+      }
+      throw wrapped;
+    } finally {
+      clearTimeout(timeoutId);
+      if (options.signal && onExternalAbort) {
+        options.signal.removeEventListener('abort', onExternalAbort);
+      }
     }
-    throw error;
   }
+
+  throw lastError || createApiError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', {
+    action,
+    errorCode: 'TEMPORARY_ERROR',
+    attempt: maxAttempts
+  });
 }
 
 // ==========================================
@@ -144,6 +281,16 @@ let signatureCtx = null;
 let isDrawingSignature = false;
 let hasSignature = false;
 let signatureModalTrigger = null;
+let loadDataSeq = 0;
+let loadDataController = null;
+let borrowSubmitRequestId = null;
+
+function generateRequestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+}
 
 // ==========================================
 // Helper Functions
@@ -283,12 +430,19 @@ function switchTab(tabName) {
 // Load Data & Render Public UI
 // ==========================================
 async function loadData() {
+  const seq = ++loadDataSeq;
+  if (loadDataController) {
+    try { loadDataController.abort(); } catch (e) { /* ignore */ }
+  }
+  loadDataController = new AbortController();
+  const signal = loadDataController.signal;
+
   const spinner = document.getElementById('loading-spinner');
   if (spinner) spinner.style.display = 'flex';
 
   try {
-    const res = await apiRequest('getData');
-    if (spinner) spinner.style.display = 'none';
+    const res = await apiRequest('getData', {}, { signal });
+    if (seq !== loadDataSeq) return;
 
     if (res && res.status === 'success') {
       equipmentData = res.equipment || [];
@@ -317,12 +471,15 @@ async function loadData() {
       throw new Error(res.message || 'ไม่สามารถโหลดข้อมูลได้');
     }
   } catch (err) {
-    if (spinner) spinner.style.display = 'none';
+    if (seq !== loadDataSeq) return;
+    if (err && (err.errorCode === 'REQUEST_ABORTED' || err.name === 'AbortError')) return;
     Swal.fire({
       icon: 'error',
       title: 'เกิดข้อผิดพลาด',
       text: err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'
     });
+  } finally {
+    if (seq === loadDataSeq && spinner) spinner.style.display = 'none';
   }
 }
 
@@ -1010,6 +1167,10 @@ async function handleBorrowSubmit(event) {
   const form = event.target;
   const submitBtn = document.getElementById('borrowSubmitButton');
 
+  if (submitBtn && submitBtn.disabled) {
+    return;
+  }
+
   if (!hasSignature) {
     Swal.fire('กรุณาลงลายเซ็น', 'โปรดลงลายเซ็นก่อนยืนยันการยืมอุปกรณ์', 'warning');
     return;
@@ -1025,7 +1186,12 @@ async function handleBorrowSubmit(event) {
     }
   }
 
+  if (!borrowSubmitRequestId) {
+    borrowSubmitRequestId = generateRequestId();
+  }
+
   const payload = {
+    requestId: borrowSubmitRequestId,
     borrowerName: form.borrowerName.value,
     email: form.email.value,
     phone: form.phone.value,
@@ -1046,12 +1212,17 @@ async function handleBorrowSubmit(event) {
 
     const res = await apiRequest('saveBorrowRequest', payload);
     if (res === 'Success' || res.status === 'success') {
+      borrowSubmitRequestId = null;
       closeModal();
       clearCart();
+      let successText = 'ระบบได้ส่งคำขอยืมของท่านเรียบร้อยแล้ว รอการอนุมัติจากผู้ดูแล';
+      if (res && Array.isArray(res.notificationWarnings) && res.notificationWarnings.length > 0) {
+        successText += ' (แจ้งเตือนบางช่องทางอาจล่าช้า)';
+      }
       Swal.fire({
         icon: 'success',
         title: 'ยื่นคำขอยืมสำเร็จ',
-        text: 'ระบบได้ส่งคำขอยืมของท่านเรียบร้อยแล้ว รอการอนุมัติจากผู้ดูแล'
+        text: successText
       });
       loadData();
     } else {

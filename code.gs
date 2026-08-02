@@ -215,11 +215,27 @@ function handleDeleteUser(payload) {
 }
 
 function handleSaveBorrowRequest(payload) {
+  var started = Date.now();
+  var requestId = (payload && payload.requestId) ? String(payload.requestId) : '';
   try {
-    const res = saveBorrowRequest(payload);
+    var res = saveBorrowRequest(payload);
+    Logger.log(JSON.stringify({
+      action: 'saveBorrowRequest',
+      requestId: requestId,
+      elapsedMs: Date.now() - started,
+      resultCode: 'SUCCESS'
+    }));
     return createJsonResponse({ success: true, data: res });
   } catch (err) {
-    return createErrorResponse('BORROW_ERROR', err.message || 'ไม่สามารถบันทึกการยืมได้');
+    var code = err.errorCode || 'BORROW_ERROR';
+    var message = err.message || 'ไม่สามารถบันทึกการยืมได้';
+    Logger.log(JSON.stringify({
+      action: 'saveBorrowRequest',
+      requestId: requestId,
+      elapsedMs: Date.now() - started,
+      resultCode: code
+    }));
+    return createErrorResponse(code, message);
   }
 }
 
@@ -730,106 +746,219 @@ function getData() {
   }
 }
 
+var BORROW_IDEMPOTENCY_PREFIX = 'borrowReq:';
+var BORROW_IDEMPOTENCY_TTL_SEC = 21600;
+
+function throwAppError(code, message) {
+  var err = new Error(message);
+  err.errorCode = code;
+  throw err;
+}
+
+function getBorrowIdempotencyRecord(requestId) {
+  if (!requestId) return null;
+  var key = BORROW_IDEMPOTENCY_PREFIX + requestId;
+  try {
+    var cached = CacheService.getScriptCache().get(key);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) { /* ignore cache read errors */ }
+  try {
+    var stored = PropertiesService.getScriptProperties().getProperty(key);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e2) { /* ignore properties read errors */ }
+  return null;
+}
+
+function setBorrowIdempotencyRecord(requestId, record) {
+  if (!requestId || !record) return;
+  var key = BORROW_IDEMPOTENCY_PREFIX + requestId;
+  var json = JSON.stringify(record);
+  try {
+    CacheService.getScriptCache().put(key, json, BORROW_IDEMPOTENCY_TTL_SEC);
+  } catch (e) { /* ignore cache write errors */ }
+  try {
+    PropertiesService.getScriptProperties().setProperty(key, json);
+  } catch (e2) { /* ignore properties write errors */ }
+}
+
 function saveBorrowRequest(form) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const lock = LockService.getScriptLock();
+  if (!form || !form.borrowerName || !form.email || !form.phone) {
+    throwAppError('VALIDATION_ERROR', 'ข้อมูลผู้ยืมไม่ครบถ้วน');
+  }
+  form.borrowRoom = String(form.borrowRoom || '').trim();
+  if (!form.borrowRoom) {
+    throwAppError('VALIDATION_ERROR', 'กรุณาเลือกห้องที่ใช้ยืมให้ถูกต้อง');
+  }
+  if (!form.signatureData || typeof form.signatureData !== 'string' || !form.signatureData.startsWith('data:image')) {
+    throwAppError('VALIDATION_ERROR', 'กรุณาลงลายเซ็นก่อนยืนยันการยืม');
+  }
+
+  var signatureMatch = form.signatureData.match(/^data:([^;]+);base64,(.+)$/);
+  if (!signatureMatch) throwAppError('VALIDATION_ERROR', 'กรุณาลงลายเซ็นก่อนยืนยันการยืม');
+  var signatureBase64 = signatureMatch[2];
+  var signatureSizeInBytes = (signatureBase64.length * 3) / 4;
+  if (signatureSizeInBytes < 800) {
+    throwAppError('VALIDATION_ERROR', 'กรุณาลงลายเซ็นก่อนยืนยันการยืม');
+  }
+  if (!Array.isArray(form.equipId) || !Array.isArray(form.equipName) || !Array.isArray(form.qty) || form.equipId.length === 0) {
+    throwAppError('VALIDATION_ERROR', 'ไม่พบรายการอุปกรณ์ที่ยืม');
+  }
+  for (var qi = 0; qi < form.qty.length; qi++) {
+    var qtyCheck = Number(form.qty[qi]);
+    if (!qtyCheck || qtyCheck <= 0) {
+      throwAppError('VALIDATION_ERROR', 'จำนวนยืมไม่ถูกต้อง: ' + form.equipName[qi]);
+    }
+  }
+
+  var requestId = String(form.requestId || '').trim();
+  if (requestId) {
+    var earlyDup = getBorrowIdempotencyRecord(requestId);
+    if (earlyDup && earlyDup.transId) {
+      return {
+        status: 'success',
+        transId: earlyDup.transId,
+        duplicate: true,
+        notificationWarnings: []
+      };
+    }
+  }
+
+  var today = new Date();
+  var userEmail = Session.getActiveUser().getEmail() || 'System';
+  var scanMethod = form.scanMethod || 'manual';
+
+  // Upload signature before lock (failure cancels before write, same as previous flow)
+  var preTransId = 'T-' + new Date().getTime();
+  var signatureFileName = 'signature_' + preTransId + '_' + Date.now() + '.png';
+  var signatureUrl = uploadImageToDrive(form.signatureData, signatureFileName);
+  if (!signatureUrl) {
+    throwAppError('TEMPORARY_ERROR', 'ไม่สามารถอัปโหลดลายเซ็นได้');
+  }
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var lock = LockService.getScriptLock();
+  var locked = lock.tryLock(10000);
+  if (!locked) {
+    throwAppError('SYSTEM_BUSY', 'ระบบกำลังใช้งานหนาแน่น กรุณาลองใหม่อีกครั้ง');
+  }
+
+  var transId = preTransId;
+  var notificationWarnings = [];
+  var duplicateResult = null;
 
   try {
-    lock.waitLock(10000);
-
-    const equipSheet = ss.getSheetByName(SHEET_EQUIPMENT);
-    const transSheet = ss.getSheetByName(SHEET_TRANSACTIONS);
-
-    const transId = 'T-' + new Date().getTime();
-    const today = new Date();
-    const userEmail = Session.getActiveUser().getEmail() || 'System';
-    const scanMethod = form.scanMethod || 'manual';
-
-    if (!form || !form.borrowerName || !form.email || !form.phone) {
-      throw new Error('ข้อมูลผู้ยืมไม่ครบถ้วน');
-    }
-    form.borrowRoom = String(form.borrowRoom || '').trim();
-    if (!form.borrowRoom) {
-      throw new Error('กรุณาเลือกห้องที่ใช้ยืมให้ถูกต้อง');
-    }
-    if (!form.signatureData || typeof form.signatureData !== 'string' || !form.signatureData.startsWith('data:image')) {
-      throw new Error('กรุณาลงลายเซ็นก่อนยืนยันการยืม');
+    if (requestId) {
+      var existing = getBorrowIdempotencyRecord(requestId);
+      if (existing && existing.transId) {
+        duplicateResult = {
+          status: 'success',
+          transId: existing.transId,
+          duplicate: true,
+          notificationWarnings: []
+        };
+      }
     }
 
-    const signatureMatch = form.signatureData.match(/^data:([^;]+);base64,(.+)$/);
-    if (!signatureMatch) throw new Error('กรุณาลงลายเซ็นก่อนยืนยันการยืม');
-    const signatureBase64 = signatureMatch[2];
-    const signatureSizeInBytes = (signatureBase64.length * 3) / 4;
-    if (signatureSizeInBytes < 800) {
-      throw new Error('กรุณาลงลายเซ็นก่อนยืนยันการยืม');
-    }
-    if (!Array.isArray(form.equipId) || !Array.isArray(form.equipName) || !Array.isArray(form.qty) || form.equipId.length === 0) {
-      throw new Error('ไม่พบรายการอุปกรณ์ที่ยืม');
-    }
+    if (!duplicateResult) {
+      var equipSheet = ss.getSheetByName(SHEET_EQUIPMENT);
+      var transSheet = ss.getSheetByName(SHEET_TRANSACTIONS);
+      var equipData = equipSheet.getDataRange().getValues();
+      var pendingRows = [];
 
-    const equipData = equipSheet.getDataRange().getValues();
-    const pendingRows = [];
+      for (var i = 0; i < form.equipId.length; i++) {
+        var equipId = form.equipId[i];
+        var equipName = form.equipName[i];
+        var qty = Number(form.qty[i]);
+        var rowIndex = -1;
+        var currentStock = 0;
 
-    for (let i = 0; i < form.equipId.length; i++) {
-      const equipId = form.equipId[i];
-      const equipName = form.equipName[i];
-      const qty = Number(form.qty[i]);
-      let rowIndex = -1;
-      let currentStock = 0;
-
-      if (!qty || qty <= 0) throw new Error(`จำนวนยืมไม่ถูกต้อง: ${equipName}`);
-
-      for (let j = 1; j < equipData.length; j++) {
-        if (String(equipData[j][0]) === String(equipId)) {
-          rowIndex = j + 1;
-          currentStock = Number(equipData[j][3]);
-          break;
+        for (var j = 1; j < equipData.length; j++) {
+          if (String(equipData[j][0]) === String(equipId)) {
+            rowIndex = j + 1;
+            currentStock = Number(equipData[j][3]);
+            break;
+          }
         }
+
+        if (rowIndex === -1) throwAppError('VALIDATION_ERROR', 'ไม่พบรหัสอุปกรณ์: ' + equipId);
+        if (currentStock < qty) {
+          throwAppError('INSUFFICIENT_STOCK', 'สินค้า ' + equipName + ' หมด หรือไม่เพียงพอในขณะนี้');
+        }
+
+        pendingRows.push([
+          transId,
+          form.borrowerName,
+          form.email,
+          form.phone,
+          equipId,
+          equipName,
+          qty,
+          today,
+          form.returnDate,
+          form.reason,
+          'รออนุมัติ',
+          '',
+          false,
+          userEmail,
+          '',
+          scanMethod,
+          form.borrowRoom,
+          signatureUrl
+        ]);
       }
 
-      if (rowIndex === -1) throw new Error(`ไม่พบรหัสอุปกรณ์: ${equipId}`);
-      if (currentStock < qty) throw new Error(`สินค้า ${equipName} หมด หรือไม่เพียงพอในขณะนี้`);
+      var startRow = transSheet.getLastRow() + 1;
+      transSheet.getRange(startRow, 1, pendingRows.length, pendingRows[0].length).setValues(pendingRows);
 
-      pendingRows.push([
-        transId,
-        form.borrowerName,
-        form.email,
-        form.phone,
-        equipId,
-        equipName,
-        qty,
-        today,
-        form.returnDate,
-        form.reason,
-        'รออนุมัติ',
-        '',
-        false,
-        userEmail,
-        '',
-        scanMethod,
-        form.borrowRoom,
-        ''
-      ]);
+      if (requestId) {
+        setBorrowIdempotencyRecord(requestId, { transId: transId, status: 'success' });
+      }
     }
-
-    const signatureFileName = 'signature_' + transId + '_' + Date.now() + '.png';
-    const signatureUrl = uploadImageToDrive(form.signatureData, signatureFileName);
-    if (!signatureUrl) throw new Error('ไม่สามารถอัปโหลดลายเซ็นได้');
-
-    for (let i = 0; i < pendingRows.length; i++) {
-      pendingRows[i][17] = signatureUrl;
-      transSheet.appendRow(pendingRows[i]);
-    }
-
-    sendBorrowConfirmationEmail(form, transId, form.equipName, today, form.returnDate, signatureUrl);
-    sendBorrowTelegramNotification(form, transId);
-
-    return "Success";
   } catch (e) {
-    throw new Error(e.message);
+    if (e.errorCode) throw e;
+    throwAppError('TEMPORARY_ERROR', e.message || 'ไม่สามารถบันทึกการยืมได้');
   } finally {
-    lock.releaseLock();
+    if (locked) {
+      lock.releaseLock();
+    }
   }
+
+  if (duplicateResult) {
+    return duplicateResult;
+  }
+
+  try {
+    sendBorrowConfirmationEmail(form, transId, form.equipName, today, form.returnDate, signatureUrl);
+  } catch (emailErr) {
+    notificationWarnings.push('EMAIL_FAILED');
+    Logger.log(JSON.stringify({
+      action: 'saveBorrowRequest',
+      requestId: requestId,
+      resultCode: 'EMAIL_FAILED'
+    }));
+  }
+
+  try {
+    sendBorrowTelegramNotification(form, transId);
+  } catch (tgErr) {
+    notificationWarnings.push('TELEGRAM_FAILED');
+    Logger.log(JSON.stringify({
+      action: 'saveBorrowRequest',
+      requestId: requestId,
+      resultCode: 'TELEGRAM_FAILED'
+    }));
+  }
+
+  return {
+    status: 'success',
+    transId: transId,
+    duplicate: false,
+    notificationWarnings: notificationWarnings
+  };
 }
 
 function returnEquipment(transId, equipId, qty) {
@@ -1415,7 +1544,11 @@ function sendBorrowConfirmationEmail(form, transId, equipNames, borrowDate, retu
 
     MailApp.sendEmail({ to: form.email, subject: subject, htmlBody: body });
   } catch (e) {
-    Logger.log('Error sending email: ' + e.toString());
+    Logger.log(JSON.stringify({
+      action: 'sendBorrowConfirmationEmail',
+      resultCode: 'EMAIL_FAILED'
+    }));
+    throw e;
   }
 }
 
