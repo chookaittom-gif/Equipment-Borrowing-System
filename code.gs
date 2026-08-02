@@ -4,6 +4,11 @@ const SHEET_TRANSACTIONS = 'Transactions';
 const SHEET_CONTACT = 'Contact';
 const SHEET_USERS = 'Users';
 const EQUIPMENT_CATEGORIES = ['audiovisual', 'kitchen', 'general'];
+const EQUIPMENT_CATEGORY_PREFIXES = {
+  audiovisual: 'A',
+  kitchen: 'B',
+  general: 'C'
+};
 const LEGACY_EQUIPMENT_CATEGORY_MAP = {
   audiovisual: 'audiovisual',
   Projector: 'audiovisual',
@@ -1005,7 +1010,9 @@ function saveEquipment(data) {
       throw new Error('กรุณาเลือกหมวดหมู่ที่กำหนด');
     }
 
-    const newId = String(data.id || '').trim();
+    const newId = data.action === 'add'
+      ? generateNextEquipmentId_(allData, category)
+      : String(data.id || '').trim();
     const originalId = String(data.originalId || data.id || '').trim();
     if (!newId) throw new Error('กรุณากรอกรหัสอุปกรณ์');
 
@@ -1079,12 +1086,27 @@ function saveEquipment(data) {
       sheet.getRange(rowIndex, 10).setValue(newQrCode);
     }
 
-    return "Success";
+    return { id: newId };
   } catch (e) {
     throw new Error(e.message);
   } finally {
     lock.releaseLock();
   }
+}
+
+function generateNextEquipmentId_(equipmentData, category) {
+  const prefix = EQUIPMENT_CATEGORY_PREFIXES[category];
+  if (!prefix) throw new Error('ไม่พบรูปแบบรหัสสำหรับหมวดอุปกรณ์');
+
+  let highestSequence = 0;
+  const idPattern = new RegExp('^' + prefix + '(\\d+)$', 'i');
+
+  for (let i = 1; i < equipmentData.length; i++) {
+    const match = String(equipmentData[i][0] || '').trim().match(idPattern);
+    if (match) highestSequence = Math.max(highestSequence, Number(match[1]));
+  }
+
+  return prefix + String(highestSequence + 1).padStart(3, '0');
 }
 
 function deleteEquipment(id) {
@@ -1284,7 +1306,7 @@ function sendApprovalEmail(email, borrowerName, transId, equipNames, qtys) {
       <div style="font-family: 'Sarabun', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">ระบบยืม-คืนอุปกรณ์</h1>
-          <p style="color: #e0f2fe; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+          <p style="color: #e0f2fe; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษาลำปาง</p>
         </div>
         <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #059669; margin-top: 0;">คำขอยืมได้รับการอนุมัติแล้ว ✅</h2>
@@ -1322,7 +1344,7 @@ function sendRejectionEmail(email, borrowerName, transId, equipNames, qtys, reas
       <div style="font-family: 'Sarabun', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">ระบบยืม-คืนอุปกรณ์</h1>
-          <p style="color: #fee2e2; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+          <p style="color: #fee2e2; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษาลำปาง</p>
         </div>
         <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #dc2626; margin-top: 0;">คำขอยืมไม่ได้รับการอนุมัติ ❌</h2>
@@ -1362,7 +1384,7 @@ function sendBorrowConfirmationEmail(form, transId, equipNames, borrowDate, retu
       <div style="font-family: 'Sarabun', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
         <div style="background: linear-gradient(135deg, #075985 0%, #0284c7 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">ระบบยืม-คืนอุปกรณ์</h1>
-          <p style="color: #e0f2fe; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษา ลำปาง</p>
+          <p style="color: #e0f2fe; margin: 10px 0 0 0;">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษาลำปาง</p>
         </div>
         <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #075985; margin-top: 0;">การยืมอุปกรณ์สำเร็จ ✅</h2>

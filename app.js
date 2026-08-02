@@ -342,9 +342,9 @@ function getCategoryLabel(cat) {
   const categoryLabels = {
     audiovisual: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์',
     kitchen: 'ห้องครัว & ประกอบอาหาร',
-    general: 'ทั่วไป'
+    general: 'อุปกรณ์ทั่วไป'
   };
-  return categoryLabels[cat] || cat || 'ทั่วไป';
+  return categoryLabels[cat] || cat || 'อุปกรณ์ทั่วไป';
 }
 
 function renderCategoryFilters() {
@@ -355,7 +355,7 @@ function renderCategoryFilters() {
     { id: 'all', label: 'ทั้งหมด', icon: 'fa-list' },
     { id: 'audiovisual', label: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์', icon: 'fa-laptop' },
     { id: 'kitchen', label: 'ห้องครัว & ประกอบอาหาร', icon: 'fa-utensils' },
-    { id: 'general', label: 'ทั่วไป', icon: 'fa-boxes-stacked' }
+    { id: 'general', label: 'อุปกรณ์ทั่วไป', icon: 'fa-boxes-stacked' }
   ];
 
   container.innerHTML = categories.map(c => `
@@ -1525,6 +1525,31 @@ async function returnEquipmentConfirm(transId, equipId, qty) {
 // ==========================================
 // Admin Equipment Add / Edit / Delete
 // ==========================================
+function getNextEquipmentId(category) {
+  const categoryPrefixes = {
+    audiovisual: 'A',
+    kitchen: 'B',
+    general: 'C'
+  };
+  const prefix = categoryPrefixes[category];
+  if (!prefix) return '';
+
+  const idPattern = new RegExp(`^${prefix}(\\d+)$`, 'i');
+  const highestSequence = equipmentData.reduce((highest, item) => {
+    const match = String(item.id || '').trim().match(idPattern);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+
+  return `${prefix}${String(highestSequence + 1).padStart(3, '0')}`;
+}
+
+function updateAutoEquipmentId() {
+  if (document.getElementById('manageAction')?.value !== 'add') return;
+  const idInput = document.getElementById('manageId');
+  const category = document.getElementById('manageCategory')?.value;
+  if (idInput) idInput.value = getNextEquipmentId(category);
+}
+
 function openEquipModal(action, equipId = null) {
   const modal = document.getElementById('equipModal');
   const form = document.getElementById('equipForm');
@@ -1544,6 +1569,7 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageOriginalId').value = item.id;
     document.getElementById('manageId').value = item.id;
     document.getElementById('manageId').readOnly = false;
+    document.getElementById('manageId').placeholder = '';
     document.getElementById('manageName').value = item.name;
     document.getElementById('manageCategory').value = item.category || 'general';
     document.getElementById('manageDescription').value = item.description || '';
@@ -1582,7 +1608,8 @@ function openEquipModal(action, equipId = null) {
   } else {
     title.innerHTML = `<i class="fa-solid fa-plus mr-2"></i>เพิ่มอุปกรณ์ใหม่`;
     document.getElementById('manageOriginalId').value = '';
-    document.getElementById('manageId').readOnly = false;
+    document.getElementById('manageId').readOnly = true;
+    document.getElementById('manageId').placeholder = 'เลือกหมวดเพื่อสร้างรหัสอัตโนมัติ';
   }
 
   modal.classList.remove('hidden');
