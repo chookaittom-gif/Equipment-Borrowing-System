@@ -108,15 +108,20 @@ async function apiRequest(action, payload = {}, options = {}) {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: postBody,
+          cache: 'no-store',
+          redirect: 'follow',
           signal: controller.signal
         });
       } else {
         const queryParams = new URLSearchParams({
           action: action,
-          payload: JSON.stringify(payload)
+          payload: JSON.stringify(payload),
+          _ts: `${Date.now()}_${attempt}`
         });
         response = await fetch(`${apiUrl}?${queryParams.toString()}`, {
           method: 'GET',
+          cache: 'no-store',
+          redirect: 'follow',
           signal: controller.signal
         });
       }
