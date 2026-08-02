@@ -136,6 +136,8 @@ let activeCategory = 'all';
 let borrowChart = null;
 let cart = [];
 let cartModalOpen = false;
+let imageZoomItems = [];
+let imageZoomIndex = 0;
 
 let signatureCanvas = null;
 let signatureCtx = null;
@@ -484,10 +486,11 @@ function renderEquipmentGrid() {
 
     const catLabel = getCategoryLabel(item.category);
     const imgUrl = getSampleEquipmentImage(item) || EQUIPMENT_IMAGE_FALLBACK;
+    const secondaryImgUrl = formatImageUrl(item.image2);
 
     return `
       <div class="equipment-card">
-        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
+        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" data-secondary-src="${escapeHtml(secondaryImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
           <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
           <div class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
@@ -543,9 +546,10 @@ function changePage(direction) {
 
 function openEquipmentImageFromGallery(el) {
   const url = String(el?.dataset?.src || '').trim();
+  const secondaryUrl = String(el?.dataset?.secondarySrc || '').trim();
   const equipName = String(el?.dataset?.equipName || '').trim();
   const equipId = String(el?.dataset?.equipId || '').trim();
-  if (url) zoomImage(url, equipName, equipId);
+  if (url) zoomImage(url, equipName, equipId, secondaryUrl);
 }
 
 function handleEquipmentImageGalleryKeydown(event, el) {
@@ -562,16 +566,72 @@ function buildEquipmentImageLabel(equipName, equipId) {
   return name || id || 'ภาพอุปกรณ์';
 }
 
-function zoomImage(url, equipName, equipId) {
+function renderImageZoomGallery() {
+  const modal = document.getElementById('image-zoom-modal');
+  const gallery = document.getElementById('imageZoomGallery');
+  if (!gallery) return;
+
+  if (imageZoomItems.length < 2) {
+    gallery.hidden = true;
+    gallery.innerHTML = '';
+    return;
+  }
+
+  const equipmentLabel = buildEquipmentImageLabel(modal?.dataset?.equipName, modal?.dataset?.equipId);
+  gallery.hidden = false;
+  gallery.innerHTML = imageZoomItems.map((item, index) => {
+    const isActive = index === imageZoomIndex;
+    const buttonLabel = `${item.label}: ${equipmentLabel}`;
+    return `
+      <button type="button" class="imageZoomThumbnail${isActive ? ' isActive' : ''}" onclick="selectImageZoom(${index})" aria-label="${escapeHtml(buttonLabel)}" aria-pressed="${isActive}">
+        <img src="${escapeHtml(item.url)}" alt="" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+        <span>${escapeHtml(item.label)}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function updateImageZoomFrame() {
   const modal = document.getElementById('image-zoom-modal');
   const img = document.getElementById('zoomed-image');
   const caption = document.getElementById('imageZoomCaption');
+  const currentItem = imageZoomItems[imageZoomIndex];
+  if (!modal || !img || !currentItem) return;
+
+  const equipmentLabel = buildEquipmentImageLabel(modal.dataset.equipName, modal.dataset.equipId);
+  const label = `${equipmentLabel} — ${currentItem.label}`;
+  img.src = currentItem.url;
+  img.alt = label;
+  img.onerror = () => handleEquipmentImageError(img);
+  if (caption) caption.textContent = label;
+  document.querySelectorAll('#imageZoomGallery .imageZoomThumbnail').forEach((button, index) => {
+    const isActive = index === imageZoomIndex;
+    button.classList.toggle('isActive', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
+function selectImageZoom(index) {
+  const nextIndex = Number(index);
+  if (!Number.isInteger(nextIndex) || nextIndex < 0 || nextIndex >= imageZoomItems.length) return;
+  imageZoomIndex = nextIndex;
+  updateImageZoomFrame();
+}
+
+function zoomImage(url, equipName, equipId, secondaryUrl = '') {
+  const modal = document.getElementById('image-zoom-modal');
+  const img = document.getElementById('zoomed-image');
   if (!modal || !img) return;
 
-  const label = buildEquipmentImageLabel(equipName, equipId);
-  img.src = url;
-  img.alt = label;
-  if (caption) caption.textContent = label;
+  imageZoomItems = [{ url: String(url).trim(), label: 'ภาพหลัก' }];
+  if (String(secondaryUrl || '').trim()) {
+    imageZoomItems.push({ url: String(secondaryUrl).trim(), label: 'อุปกรณ์ร่วม' });
+  }
+  imageZoomIndex = 0;
+  modal.dataset.equipName = String(equipName || '').trim();
+  modal.dataset.equipId = String(equipId || '').trim();
+  renderImageZoomGallery();
+  updateImageZoomFrame();
   modal.classList.add('show');
   modal.querySelector('.image-zoom-close')?.focus();
 }
@@ -584,12 +644,24 @@ function closeImageZoom() {
   const modal = document.getElementById('image-zoom-modal');
   const img = document.getElementById('zoomed-image');
   const caption = document.getElementById('imageZoomCaption');
+  const gallery = document.getElementById('imageZoomGallery');
   modal?.classList.remove('show');
+  if (modal) {
+    delete modal.dataset.equipName;
+    delete modal.dataset.equipId;
+  }
   if (img) {
     img.src = '';
     img.alt = '';
+    img.onerror = null;
   }
   if (caption) caption.textContent = '';
+  if (gallery) {
+    gallery.hidden = true;
+    gallery.innerHTML = '';
+  }
+  imageZoomItems = [];
+  imageZoomIndex = 0;
 }
 
 document.addEventListener('keydown', (event) => {
