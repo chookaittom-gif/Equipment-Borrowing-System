@@ -31,6 +31,7 @@ function resolveFrontendUrl() {
 // ==========================================
 const API_DEFAULT_TIMEOUT_MS = 90000;
 const API_HEAVY_TIMEOUT_MS = 120000;
+const API_404_RETRY_DELAY_MS = 1000;
 const ADMIN_SESSION_MS = 6 * 60 * 60 * 1000;
 const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
@@ -50,24 +51,29 @@ async function apiRequest(action, payload = {}, options = {}) {
     ].includes(action);
 
     let response;
-    if (isPost) {
-      // Use text/plain body to prevent CORS preflight OPTIONS block on script.google.com
-      const postBody = JSON.stringify({ action, payload });
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: postBody,
-        signal: controller.signal
-      });
-    } else {
-      const queryParams = new URLSearchParams({
-        action: action,
-        payload: JSON.stringify(payload)
-      });
-      response = await fetch(`${apiUrl}?${queryParams.toString()}`, {
-        method: 'GET',
-        signal: controller.signal
-      });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (isPost) {
+        // Use text/plain body to prevent CORS preflight OPTIONS block on script.google.com
+        const postBody = JSON.stringify({ action, payload });
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: postBody,
+          signal: controller.signal
+        });
+      } else {
+        const queryParams = new URLSearchParams({
+          action: action,
+          payload: JSON.stringify(payload)
+        });
+        response = await fetch(`${apiUrl}?${queryParams.toString()}`, {
+          method: 'GET',
+          signal: controller.signal
+        });
+      }
+
+      if (isPost || response.status !== 404 || attempt === 1) break;
+      await new Promise(resolve => setTimeout(resolve, API_404_RETRY_DELAY_MS));
     }
 
     clearTimeout(timeoutId);
