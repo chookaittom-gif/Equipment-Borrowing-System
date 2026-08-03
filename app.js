@@ -560,75 +560,82 @@ function filterEquipment() {
   renderEquipmentGrid();
 }
 
-function formatImageUrl(rawUrl) {
+const EQUIPMENT_IMAGE_LISTING_WIDTH = 400;
+const EQUIPMENT_IMAGE_FULL_WIDTH = 800;
+
+function normalizeEquipmentImageWidth(url, width) {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('data:image')) return url;
+  const w = Number(width) || EQUIPMENT_IMAGE_FULL_WIDTH;
+  if (/[?&]sz=w\d+/i.test(url)) {
+    return url.replace(/([?&]sz=)w\d+/i, `$1w${w}`);
+  }
+  if (/[?&]w=\d+/i.test(url)) {
+    return url.replace(/([?&]w=)\d+/i, `$1${w}`);
+  }
+  return url;
+}
+
+function formatImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
   const url = rawUrl.trim();
   if (!url) return '';
   if (url.startsWith('data:image')) return url;
 
+  const w = Number(width) || EQUIPMENT_IMAGE_FULL_WIDTH;
+
   // Convert Google Drive view/share URLs to direct thumbnail URLs
   const driveMatch = url.match(/(?:file\/d\/|id=|\/d\/)([a-zA-Z0-9_-]{25,})/);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w${w}`;
   }
-  return url;
+  return normalizeEquipmentImageWidth(url, w);
 }
 
-function getSampleEquipmentImage(item) {
+function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
   if (!item) return '';
-  const formatted1 = formatImageUrl(item.image1);
+  const formatted1 = formatImageUrl(item.image1, width);
   if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
 
   const name = (item.name || '').toLowerCase();
   const cat = (item.category || '').toLowerCase();
+  let sample = '';
 
   if (name.includes('ฟอกอากาศ') || name.includes('air purifier')) {
-    return 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('แม็ค') || name.includes('macbook') || name.includes('mac')) {
-    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('ตั้งโต๊ะ') || name.includes('pc') || name.includes('ชุดคอมพิวเตอร์')) {
-    return 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('โน้ตบุ๊ก') || name.includes('notebook') || name.includes('laptop') || name.includes('lenovo')) {
-    return 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
-    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
-    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('เลเซอร์') || name.includes('kress') || name.includes('วัดระดับ')) {
-    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('หม้อ') || name.includes('ต้ม')) {
-    return 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('กระทะก้นลึก')) {
-    return 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('กระทะ') || name.includes('สแตนเลส')) {
-    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('กระบวย')) {
-    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('ตะหลิว')) {
-    return 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=contain&q=80';
-  }
-  if (name.includes('ทัพพี')) {
-    return 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
+    sample = 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('แม็ค') || name.includes('macbook') || name.includes('mac')) {
+    sample = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('ตั้งโต๊ะ') || name.includes('pc') || name.includes('ชุดคอมพิวเตอร์')) {
+    sample = 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('โน้ตบุ๊ก') || name.includes('notebook') || name.includes('laptop') || name.includes('lenovo')) {
+    sample = 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
+    sample = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
+    sample = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('เลเซอร์') || name.includes('kress') || name.includes('วัดระดับ')) {
+    sample = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('หม้อ') || name.includes('ต้ม')) {
+    sample = 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('กระทะก้นลึก')) {
+    sample = 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('กระทะ') || name.includes('สแตนเลส')) {
+    sample = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('กระบวย')) {
+    sample = 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('ตะหลิว')) {
+    sample = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=contain&q=80';
+  } else if (name.includes('ทัพพี')) {
+    sample = 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
+  } else if (cat === 'audiovisual') {
+    sample = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=contain&q=80';
+  } else if (cat === 'kitchen') {
+    sample = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
+  } else {
+    sample = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=contain&q=80';
   }
 
-  if (cat === 'audiovisual') {
-    return 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=contain&q=80';
-  }
-  if (cat === 'kitchen') {
-    return 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
-  }
-  return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=contain&q=80';
+  return normalizeEquipmentImageWidth(sample, width);
 }
 
 function renderEquipmentGrid() {
@@ -656,13 +663,14 @@ function renderEquipmentGrid() {
     const isCartAdded = cart.some(c => c.id === item.id);
 
     const catLabel = getCategoryLabel(item.category);
-    const imgUrl = getSampleEquipmentImage(item) || EQUIPMENT_IMAGE_FALLBACK;
-    const secondaryImgUrl = formatImageUrl(item.image2);
+    const listingImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
+    const fullImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
+    const secondaryFullImgUrl = formatImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
 
     return `
       <div class="equipment-card">
-        <div class="image-gallery" data-src="${escapeHtml(imgUrl)}" data-secondary-src="${escapeHtml(secondaryImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
-          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+        <div class="image-gallery" data-src="${escapeHtml(fullImgUrl)}" data-secondary-src="${escapeHtml(secondaryFullImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
+          <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
           <div class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
           </div>
@@ -925,7 +933,7 @@ function addToCart(equipId) {
   if (existing) {
     if (existing.qty < available) existing.qty += 1;
   } else {
-    cart.push({ id: item.id, name: item.name, image: getSampleEquipmentImage(item), qty: 1, maxQty: available });
+    cart.push({ id: item.id, name: item.name, image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH), qty: 1, maxQty: available });
   }
 
   updateCartBadge();
@@ -1084,7 +1092,7 @@ function initFlatpickr() {
 function openBorrowModalSingle(equipId) {
   const item = equipmentData.find(e => e.id === equipId);
   if (!item) return;
-  cart = [{ id: item.id, name: item.name, image: item.image1 || '', qty: 1, maxQty: Number(item.available) || 1 }];
+  cart = [{ id: item.id, name: item.name, image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH), qty: 1, maxQty: Number(item.available) || 1 }];
   updateCartBadge();
   openBorrowModalFromCart();
 }
@@ -1851,7 +1859,7 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageTotal').value = item.total;
     document.getElementById('manageAvailable').value = item.available;
 
-    const sampleImg = getSampleEquipmentImage(item);
+    const sampleImg = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
     const img1Src = item.image1 || sampleImg;
     if (img1Src) {
       const p1 = document.getElementById('preview1');
