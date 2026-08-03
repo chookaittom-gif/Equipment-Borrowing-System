@@ -165,8 +165,17 @@ async function apiRequest(action, payload = {}, options = {}) {
         });
       }
 
-      // Detect Google Apps Script HTML Redirect/Login Page
-      if (text.includes('<!DOCTYPE html>') || text.includes('<html') || text.includes('google-site-verification')) {
+      // Bug #4 fix: Detect GAS HTML redirect/login page using anchored checks only.
+      // Previously used text.includes('<html') which false-positives on equipment names containing 'html'.
+      // Now matches: DOCTYPE at string start (trimmed), or <html as a full opening tag, or Google login markers.
+      const trimmedText = text.trimStart();
+      const isHtmlResponse =
+        /^<!DOCTYPE\s+html/i.test(trimmedText) ||
+        /^<html[\s>]/i.test(trimmedText) ||
+        text.includes('accounts.google.com') ||
+        text.includes('ServiceLogin') ||
+        text.includes('google-site-verification');
+      if (isHtmlResponse) {
         throw createApiError('ระบบเซิร์ฟเวอร์ส่งกลับหน้า HTML ล็อกอิน กรุณาตั้งค่า GAS Web App Access เป็น Anyone', {
           action,
           httpStatus: response.status,
