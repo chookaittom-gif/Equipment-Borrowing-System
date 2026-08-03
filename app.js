@@ -29,9 +29,9 @@ function resolveFrontendUrl() {
 // ==========================================
 // Centralized API Client (Fetch + AbortController + Timeout + Retries)
 // ==========================================
-const API_DEFAULT_TIMEOUT_MS = 90000;
+const API_DEFAULT_TIMEOUT_MS = 30000;
 const API_HEAVY_TIMEOUT_MS = 120000;
-const API_MAX_GET_ATTEMPTS = 3;
+const API_MAX_GET_ATTEMPTS = 2;
 const API_RETRYABLE_HTTP = new Set([404, 429, 500, 502, 503, 504]);
 const API_RETRYABLE_CODES = new Set(['SYSTEM_BUSY', 'TEMPORARY_ERROR', 'RATE_LIMITED']);
 const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
