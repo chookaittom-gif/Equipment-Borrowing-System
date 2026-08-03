@@ -354,7 +354,7 @@
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
               </div>
             </div>
-            <div class="no-scrollbar">
+            <div class="admin-table-scroll">
               <table class="w-full text-sm text-left">
                 <thead class="bg-gray-800 text-white">
                   <tr>
@@ -398,7 +398,7 @@
                 <span class="ml-3 text-sm font-medium text-gray-700">แสดงทั้งหมด</span>
               </label>
             </div>
-            <div class="no-scrollbar">
+            <div class="admin-table-scroll">
               <table class="w-full text-sm text-left">
                 <thead class="table-header">
                   <tr>
@@ -863,7 +863,7 @@
     <div class="modal-content max-w-lg w-full mx-auto">
       <div class="modal-header">
         <h3 class="text-xl font-bold"><i class="fa-solid fa-message mr-2"></i>ติดต่อสอบถาม</h3>
-        <button onclick="closeContactModal()" class="text-white hover:text-gray-200 transition"><i class="fa-solid fa-xmark fa-lg"></i></button>
+        <button onclick="closeContactModal()" class="text-white hover:text-gray-200 transition" aria-label="ปิดหน้าต่างติดต่อสอบถาม"><i class="fa-solid fa-xmark fa-lg"></i></button>
       </div>
       <form id="contactForm" onsubmit="handleContactSubmit(event)" class="p-6 space-y-5 bg-white">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
