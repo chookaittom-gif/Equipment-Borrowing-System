@@ -144,22 +144,6 @@ body {
     margin-left: 0 !important;
     padding: 16px 12px 28px;
   }
-  .modal-content {
-    max-height: calc(100dvh - 2rem);
-    overflow-y: auto;
-  }
-  #contactModal {
-    align-items: flex-start;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-  }
-  #contactModal .modal-header button {
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
 }
 
 .sidebar-header {
@@ -1019,6 +1003,26 @@ body {
   background: white;
 }
 
+@media (max-width: 768px) {
+  .modal-content {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #contactModal {
+    align-items: flex-start;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  #contactModal .modal-header button {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .modal-header {
   background: linear-gradient(90deg, var(--olive-dark) 0%, var(--olive-medium) 100%);
   color: white;
@@ -1279,7 +1283,7 @@ body {
   max-height: 200px !important;
 }
 
-#qr-canvas-container > canvas.is-qr-hidden {
+#qr-canvas-container > .is-qr-hidden {
   display: none !important;
 }
 

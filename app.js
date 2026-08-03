@@ -841,12 +841,13 @@ function normalizeQrOutput(container, size) {
   const img = container.querySelector(':scope > img');
   const canvas = container.querySelector(':scope > canvas');
   const table = container.querySelector(':scope > table');
-  const target = img || canvas || table;
+  const target = canvas || img || table;
   if (!target) return;
 
-  if (canvas && img) {
-    canvas.classList.add('is-qr-hidden');
-    canvas.style.display = 'none';
+  if (canvas) {
+    canvas.classList.remove('is-qr-hidden');
+    canvas.style.display = 'block';
+    if (img) img.classList.add('is-qr-hidden');
   }
 
   target.style.width = `${size}px`;
@@ -855,7 +856,7 @@ function normalizeQrOutput(container, size) {
   target.style.objectFit = 'contain';
   target.style.display = 'block';
   target.style.margin = '0';
-  if (target.tagName === 'CANVAS' || target.tagName === 'IMG') {
+  if (target.tagName === 'IMG') {
     target.setAttribute('width', String(size));
     target.setAttribute('height', String(size));
   }
