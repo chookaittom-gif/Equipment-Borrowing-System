@@ -40,6 +40,81 @@ const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
 const ADMIN_USER_KEY = 'adminUser';
 
+const LAZY_SCRIPT_ASSETS = {
+  qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+  chart: 'https://cdn.jsdelivr.net/npm/chart.js',
+  flatpickr: 'https://cdn.jsdelivr.net/npm/flatpickr',
+  flatpickrTh: 'https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js'
+};
+const LAZY_STYLE_ASSETS = {
+  flatpickr: 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css'
+};
+
+const lazyAssetPromises = Object.create(null);
+
+function loadStylesheet(href, id) {
+  const key = `css:${href}`;
+  if (lazyAssetPromises[key]) return lazyAssetPromises[key];
+  lazyAssetPromises[key] = new Promise((resolve, reject) => {
+    if (id && document.getElementById(id)) {
+      resolve();
+      return;
+    }
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    if (id) link.id = id;
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error(`Failed to load stylesheet: ${href}`));
+    document.head.appendChild(link);
+  });
+  return lazyAssetPromises[key];
+}
+
+function loadScript(src) {
+  const key = `js:${src}`;
+  if (lazyAssetPromises[key]) return lazyAssetPromises[key];
+  lazyAssetPromises[key] = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === '1') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = '1';
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    document.head.appendChild(script);
+  });
+  return lazyAssetPromises[key];
+}
+
+function ensureQrCodeLibrary() {
+  if (typeof QRCode !== 'undefined') return Promise.resolve();
+  return loadScript(LAZY_SCRIPT_ASSETS.qrcode);
+}
+
+function ensureChartLibrary() {
+  if (typeof Chart !== 'undefined') return Promise.resolve();
+  return loadScript(LAZY_SCRIPT_ASSETS.chart);
+}
+
+function ensureFlatpickrLibrary() {
+  if (typeof flatpickr !== 'undefined') return Promise.resolve();
+  return loadStylesheet(LAZY_STYLE_ASSETS.flatpickr, 'lazy-flatpickr-css')
+    .then(() => loadScript(LAZY_SCRIPT_ASSETS.flatpickr))
+    .then(() => loadScript(LAZY_SCRIPT_ASSETS.flatpickrTh));
+}
+
 function createApiError(message, fields) {
   const err = new Error(message);
   err.action = fields.action || null;
@@ -399,7 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkAdminSession, ADMIN_SESSION_CHECK_MS);
     loadData();
     initSignatureCanvas();
-    initFlatpickr();
 
     const action = urlParams.get('action');
     const equipId = urlParams.get('id');
@@ -879,11 +953,18 @@ function normalizeQrOutput(container, size) {
   }
 }
 
-function showQRCode(id, name) {
+async function showQRCode(id, name) {
   const container = document.getElementById('qr-canvas-container');
   const nameEl = document.getElementById('qr-modal-name');
   const modal = document.getElementById('qr-modal');
   const qrSize = 200;
+
+  try {
+    await ensureQrCodeLibrary();
+  } catch (err) {
+    Swal.fire('ไม่สามารถโหลด QR Code', 'กรุณาลองใหม่อีกครั้ง', 'error');
+    return;
+  }
 
   if (container) {
     container.innerHTML = '';
@@ -1078,15 +1159,25 @@ function clearSignature() {
   hasSignature = false;
 }
 
-function initFlatpickr() {
+let returnFlatpickrInstance = null;
+
+async function initFlatpickr() {
   const returnInput = document.querySelector('input[name="returnDate"]');
-  if (returnInput && typeof flatpickr !== 'undefined') {
-    flatpickr(returnInput, {
-      locale: 'th',
-      dateFormat: 'Y-m-d',
-      minDate: 'today'
-    });
+  if (!returnInput || returnFlatpickrInstance) return;
+
+  try {
+    await ensureFlatpickrLibrary();
+  } catch (err) {
+    console.warn('flatpickr load failed:', err);
+    return;
   }
+
+  if (typeof flatpickr === 'undefined') return;
+  returnFlatpickrInstance = flatpickr(returnInput, {
+    locale: 'th',
+    dateFormat: 'Y-m-d',
+    minDate: 'today'
+  });
 }
 
 function openBorrowModalSingle(equipId) {
@@ -1130,6 +1221,7 @@ function openBorrowModalFromCart() {
   }
 
   prefillBorrowRoomFromCart();
+  void initFlatpickr();
   if (modal) modal.classList.remove('hidden');
   clearSignature();
 }
@@ -2253,7 +2345,7 @@ function renderAdminReports() {
   renderBorrowChart();
 }
 
-function renderBorrowChart() {
+async function renderBorrowChart() {
   const container = document.getElementById('chart-container');
   if (!container) return;
 
@@ -2283,9 +2375,21 @@ function renderBorrowChart() {
     return;
   }
 
+  try {
+    await ensureChartLibrary();
+  } catch (err) {
+    container.innerHTML = `
+      <div class="chart-empty-state" role="status">
+        <i class="fas fa-chart-column chart-empty-icon" aria-hidden="true"></i>
+        <p class="chart-empty-title">ไม่สามารถโหลดกราฟได้</p>
+        <p class="chart-empty-hint">กรุณารีเฟรชหน้าแล้วลองใหม่อีกครั้ง</p>
+      </div>`;
+    return;
+  }
+
   container.innerHTML = '<canvas id="borrowChart"></canvas>';
   const ctx = document.getElementById('borrowChart')?.getContext('2d');
-  if (!ctx) return;
+  if (!ctx || typeof Chart === 'undefined') return;
 
   borrowChart = new Chart(ctx, {
     type: 'bar',
