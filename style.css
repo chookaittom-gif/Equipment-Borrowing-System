@@ -158,14 +158,24 @@ body {
 
 .menu-item {
   display: flex;
+  width: 100%;
   align-items: center;
   padding: 14px 18px;
   margin: 6px 0;
+  border: 0;
   border-radius: 12px;
+  background: transparent;
   color: #d1d5db;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
   transition: all 0.3s ease;
   position: relative;
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid var(--olive-lighter);
+  outline-offset: 3px;
 }
 
 .menu-item:hover {
