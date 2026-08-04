@@ -1634,12 +1634,14 @@ function renderAdminEquipmentTable() {
       <td class="px-6 py-4 text-center font-bold">${item.total}</td>
       <td class="px-6 py-4 text-center font-bold ${Number(item.available) > 0 ? 'text-green-600' : 'text-red-600'}">${item.available}</td>
       <td class="px-6 py-4 text-center">
-        <button onclick="openEquipModal('edit', '${escapeHtml(item.id)}')" class="btn-action-edit mr-2">
-          <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-        </button>
-        <button onclick="deleteEquipmentConfirm('${escapeHtml(item.id)}')" class="btn-action-delete">
-          <i class="fa-solid fa-trash-can"></i> ลบ
-        </button>
+        <div class="table-action-btns">
+          <button onclick="openEquipModal('edit', '${escapeHtml(item.id)}')" class="btn-action-edit">
+            <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+          </button>
+          <button onclick="deleteEquipmentConfirm('${escapeHtml(item.id)}')" class="btn-action-delete">
+            <i class="fa-solid fa-trash-can"></i> ลบ
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -1683,11 +1685,15 @@ function renderAdminTransactionsTable() {
     let actionBtns = '';
     if (t.status === 'รออนุมัติ') {
       actionBtns = `
-        <button onclick="approveBorrowConfirm('${t.transId}')" class="btn-approve mr-1"><i class="fas fa-check"></i> อนุมัติ</button>
-        <button onclick="rejectBorrowConfirm('${t.transId}')" class="btn-reject"><i class="fas fa-times"></i> ปฏิเสธ</button>`;
+        <div class="table-action-btns">
+          <button onclick="approveBorrowConfirm('${t.transId}')" class="btn-approve"><i class="fas fa-check"></i> อนุมัติ</button>
+          <button onclick="rejectBorrowConfirm('${t.transId}')" class="btn-reject"><i class="fas fa-times"></i> ปฏิเสธ</button>
+        </div>`;
     } else if (t.status === 'กำลังยืม') {
       actionBtns = `
-        <button onclick="returnEquipmentConfirm('${t.transId}', '${t.equipId}', ${t.qty})" class="btn-approve"><i class="fas fa-undo"></i> คืนอุปกรณ์</button>`;
+        <div class="table-action-btns">
+          <button onclick="returnEquipmentConfirm('${t.transId}', '${t.equipId}', ${t.qty})" class="btn-approve"><i class="fas fa-undo"></i> คืนอุปกรณ์</button>
+        </div>`;
     } else {
       actionBtns = `<span class="text-xs text-gray-400">เสร็จสิ้น</span>`;
     }
@@ -2041,12 +2047,14 @@ function renderAdminUsersTable() {
       <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
       <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
       <td class="px-6 py-4 text-center">
-        <button onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit mr-2">
-          <i class="fa-solid fa-user-pen"></i> สิทธิ์
-        </button>
-        <button onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
-          <i class="fa-solid fa-user-minus"></i> ลบ
-        </button>
+        <div class="table-action-btns">
+          <button onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
+            <i class="fa-solid fa-user-pen"></i> สิทธิ์
+          </button>
+          <button onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
+            <i class="fa-solid fa-user-minus"></i> ลบ
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
