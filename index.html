@@ -276,17 +276,17 @@
       </aside>
 
       <div class="admin-content">
-        <div class="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-md flex items-center justify-between pb-4 pt-1 mb-6 border-b border-sky-200/80">
-          <div class="flex items-center gap-3">
-            <button onclick="toggleAdminSidebar()" class="md:hidden bg-white p-2.5 rounded-xl shadow text-gray-700 hover:bg-gray-50 transition border border-gray-200">
+        <div class="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-md flex items-center justify-between gap-2 pb-3 pt-2 mb-6 border-b border-sky-200/80">
+          <div class="flex items-center gap-2 min-w-0">
+            <button onclick="toggleAdminSidebar()" class="md:hidden bg-white p-2.5 rounded-xl shadow text-gray-700 hover:bg-gray-50 transition border border-gray-200 shrink-0" aria-label="เปิดเมนูผู้ดูแลระบบ">
               <i class="fas fa-bars fa-lg text-sky-700"></i>
             </button>
-            <span class="text-sm font-bold text-sky-900 hidden sm:inline-flex items-center gap-2 bg-sky-100/90 px-4 py-2 rounded-xl border border-sky-300/80 shadow-sm">
+            <span class="text-sm font-bold text-sky-900 hidden sm:inline-flex items-center gap-2 bg-sky-100/90 px-4 py-2 rounded-xl border border-sky-300/80 shadow-sm shrink-0">
               <i class="fa-solid fa-user-shield text-sky-700 text-base"></i> โหมดผู้ดูแลระบบ
             </span>
           </div>
-          <button onclick="switchTab('borrow')" class="btn-olive py-2 px-5 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-store text-yellow-400"></i><span>ไปยังหน้ายืมอุปกรณ์</span>
+          <button onclick="switchTab('borrow')" class="btn-olive py-2 px-3 sm:px-5 text-xs sm:text-sm flex items-center gap-2 shrink-0">
+            <i class="fa-solid fa-store text-yellow-400"></i><span class="whitespace-nowrap">ไปยังหน้ายืมอุปกรณ์</span>
           </button>
         </div>
 

@@ -30,7 +30,6 @@ function resolveFrontendUrl() {
 // Centralized API Client (Fetch + AbortController + Timeout + Retries)
 // ==========================================
 const API_DEFAULT_TIMEOUT_MS = 30000;
-const API_LOGIN_TIMEOUT_MS = 45000;
 const API_HEAVY_TIMEOUT_MS = 120000;
 const API_MAX_GET_ATTEMPTS = 2;
 const API_RETRYABLE_HTTP = new Set([404, 429, 500, 502, 503, 504]);
@@ -199,8 +198,7 @@ async function apiRequest(action, payload = {}, options = {}) {
 
       if (json.success === false) {
         const code = json.error?.code || 'SERVER_ERROR';
-        // Fallback to data.message for older GAS deploys that returned auth failure without error{}
-        const errMsg = json.error?.message || json.data?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
+        const errMsg = json.error?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
         const apiErr = createApiError(errMsg, {
           action,
           httpStatus: response.status,
@@ -1472,41 +1470,39 @@ function openAdminLoginModal() {
     confirmButtonText: 'เข้าสู่ระบบ',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#0284c7',
-    showLoaderOnConfirm: true,
-    allowOutsideClick: () => !Swal.isLoading(),
     didOpen: () => {
       bindPasswordToggle('swal-admin-pin', 'swal-admin-pin-toggle');
       document.getElementById('swal-admin-id')?.focus();
     },
-    preConfirm: async () => {
+    preConfirm: () => {
       const inputId = document.getElementById('swal-admin-id').value;
       const inputPin = document.getElementById('swal-admin-pin').value;
       if (!inputId || !inputPin) {
         Swal.showValidationMessage('กรุณากรอกไอดีผู้ใช้และรหัสผ่านให้ครบถ้วน');
         return false;
       }
-      try {
-        const res = await apiRequest('verifyAdminPin', { inputId, inputPin }, { timeout: API_LOGIN_TIMEOUT_MS });
-        if (!res || !res.success) {
-          throw new Error((res && res.message) || 'ไอดีหรือรหัสผ่านไม่ถูกต้อง');
-        }
-        return res;
-      } catch (err) {
-        Swal.showValidationMessage(err.message || 'เข้าสู่ระบบไม่สำเร็จ');
-        return false;
-      }
+      return { inputId, inputPin };
     }
-  }).then((result) => {
+  }).then(async (result) => {
     if (!result.isConfirmed || !result.value) return;
-    const res = result.value;
-    applyAdminSessionUser(res.user);
-    persistAdminSession(res.user);
+    try {
+      Swal.showLoading();
+      const res = await apiRequest('verifyAdminPin', result.value);
+      if (res && res.success) {
+        applyAdminSessionUser(res.user);
+        persistAdminSession(res.user);
 
-    document.getElementById('user-layout')?.classList.add('hidden-section');
-    document.getElementById('admin-layout')?.classList.remove('hidden-section');
+        document.getElementById('user-layout')?.classList.add('hidden-section');
+        document.getElementById('admin-layout')?.classList.remove('hidden-section');
 
-    renderAdminDashboard();
-    Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', timer: 1200, showConfirmButton: false });
+        renderAdminDashboard();
+        Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', timer: 1200, showConfirmButton: false });
+      } else {
+        throw new Error(res.message || 'ไอดีหรือรหัสผ่านไม่ถูกต้อง');
+      }
+    } catch (err) {
+      Swal.fire('เข้าสู่ระบบไม่สำเร็จ', err.message || 'ไอดีหรือรหัสผ่านไม่ถูกต้อง', 'error');
+    }
   });
 }
 
@@ -1591,26 +1587,28 @@ function renderAdminDashboard() {
   }
 
   container.innerHTML = `
-    <table class="w-full text-sm text-left">
-      <thead class="bg-gray-100 text-gray-700">
-        <tr>
-          <th class="p-3">รหัส</th>
-          <th class="p-3">ผู้ยืม</th>
-          <th class="p-3">อุปกรณ์</th>
-          <th class="p-3">สถานะ</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${recent.map(t => `
-          <tr class="border-b">
-            <td class="p-3 font-mono font-semibold">${escapeHtml(t.transId)}</td>
-            <td class="p-3">${escapeHtml(t.borrowerName)}</td>
-            <td class="p-3">${escapeHtml(t.equipName)}</td>
-            <td class="p-3"><span class="status-badge ${t.status === 'กำลังยืม' ? 'status-borrowed' : t.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending'}">${escapeHtml(t.status)}</span></td>
+    <div class="admin-table-scroll overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-100 text-gray-700">
+          <tr>
+            <th class="p-3 whitespace-nowrap">รหัส</th>
+            <th class="p-3 whitespace-nowrap">ผู้ยืม</th>
+            <th class="p-3 whitespace-nowrap">อุปกรณ์</th>
+            <th class="p-3 whitespace-nowrap">สถานะ</th>
           </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
+        </thead>
+        <tbody>
+          ${recent.map(t => `
+            <tr class="border-b">
+              <td class="p-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(t.transId)}</td>
+              <td class="p-3">${escapeHtml(t.borrowerName)}</td>
+              <td class="p-3">${escapeHtml(t.equipName)}</td>
+              <td class="p-3 whitespace-nowrap"><span class="status-badge ${t.status === 'กำลังยืม' ? 'status-borrowed' : t.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending'}">${escapeHtml(t.status)}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function renderAdminEquipmentTable() {
