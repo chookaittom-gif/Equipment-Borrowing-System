@@ -236,10 +236,14 @@ async function apiRequest(action, payload = {}, options = {}) {
       }
 
       const retryable = !isPost && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
+      let userFriendlyMessage = error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+      if (isNetworkFetchError(error)) {
+        userFriendlyMessage = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (หากล็อกอินบัญชี Google หลายบัญชีพร้อมกัน ให้ลองเปิดหน้าเว็บใน โหมดไม่ระบุตัวตน / Incognito Window)';
+      }
       const wrapped = createApiError(
         abortedByTimeout
           ? 'การเชื่อมต่อหมดเวลา (Timeout) กรุณาลองใหม่อีกครั้ง'
-          : (error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'),
+          : userFriendlyMessage,
         {
           action,
           httpStatus: error.httpStatus != null ? error.httpStatus : null,
