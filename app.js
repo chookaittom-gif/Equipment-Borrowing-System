@@ -680,9 +680,9 @@ function renderEquipmentGrid() {
           </div>
         </div>
         <div class="p-5 equipment-card-content">
-          <div class="flex items-center justify-between mb-2">
+          <div class="flex items-start justify-between gap-2 mb-2">
             <span class="category-badge">${escapeHtml(catLabel)}</span>
-            <span class="text-xs font-mono font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded-md border border-sky-200">${escapeHtml(item.id)}</span>
+            <span class="text-xs font-mono font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded-md border border-sky-200 shrink-0">${escapeHtml(item.id)}</span>
           </div>
           <h3 class="text-lg font-bold text-gray-800 equipment-card-title mb-1">${escapeHtml(item.name)}</h3>
           <p class="text-xs text-gray-500 equipment-card-meta mb-3">

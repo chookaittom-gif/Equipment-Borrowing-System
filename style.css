@@ -28,7 +28,7 @@
   --shadow-card: 0 6px 15px rgba(15, 23, 42, 0.08);
   --shadow-card-hover: 0 12px 25px rgba(2, 132, 199, 0.15);
   --radius-card: 18px;
-  --equipment-media-aspect: 16 / 9;
+  --equipment-media-aspect: 16 / 10;
   --motion-fast: 160ms;
   --motion-standard: 220ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
