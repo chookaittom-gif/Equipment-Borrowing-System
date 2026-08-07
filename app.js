@@ -293,6 +293,7 @@ let cart = [];
 let cartModalOpen = false;
 let imageZoomItems = [];
 let imageZoomIndex = 0;
+let imageZoomTrigger = null;
 
 let signatureCanvas = null;
 let signatureCtx = null;
@@ -673,11 +674,13 @@ function renderEquipmentGrid() {
 
     return `
       <div class="equipment-card">
-        <div class="image-gallery" data-src="${escapeHtml(fullImgUrl)}" data-secondary-src="${escapeHtml(secondaryFullImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" role="button" tabindex="0" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม" onkeydown="handleEquipmentImageGalleryKeydown(event, this)">
-          <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
-          <div class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code" aria-label="ดู QR Code">
+        <div class="image-gallery">
+          <button type="button" class="equipment-image-trigger" data-src="${escapeHtml(fullImgUrl)}" data-secondary-src="${escapeHtml(secondaryFullImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม">
+            <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+          </button>
+          <button type="button" class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code ของ ${escapeHtml(item.name)}" aria-label="ดู QR Code ของ ${escapeHtml(item.name)}">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
-          </div>
+          </button>
         </div>
         <div class="p-5 equipment-card-content">
           <div class="flex items-start justify-between gap-2 mb-2">
@@ -699,11 +702,11 @@ function renderEquipmentGrid() {
             </div>
           </dl>
           <div class="flex gap-2 equipment-card-action">
-            <button onclick="addToCart('${escapeHtml(item.id)}')" ${!isAvailable ? 'disabled' : ''} class="flex-1 ${isCartAdded ? 'bg-amber-500 text-white' : 'btn-olive'} py-2.5 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2">
+            <button type="button" onclick="addToCart('${escapeHtml(item.id)}')" ${!isAvailable ? 'disabled' : ''} aria-pressed="${isCartAdded}" class="flex-1 btn-cart-secondary ${isCartAdded ? 'is-added' : ''} py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
               <i class="fa-solid ${isCartAdded ? 'fa-check' : 'fa-cart-plus'}"></i>
               ${isCartAdded ? 'ในตะกร้า' : 'ใส่ตะกร้า'}
             </button>
-            <button onclick="openBorrowModalSingle('${escapeHtml(item.id)}')" ${!isAvailable ? 'disabled' : ''} class="btn-success py-2.5 px-4 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2">
+            <button type="button" onclick="openBorrowModalSingle('${escapeHtml(item.id)}')" ${!isAvailable ? 'disabled' : ''} class="btn-olive py-2.5 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
               ยืมเลย
             </button>
           </div>
@@ -732,14 +735,8 @@ function openEquipmentImageFromGallery(el) {
   const secondaryUrl = String(el?.dataset?.secondarySrc || '').trim();
   const equipName = String(el?.dataset?.equipName || '').trim();
   const equipId = String(el?.dataset?.equipId || '').trim();
+  imageZoomTrigger = el instanceof HTMLElement ? el : null;
   if (url) zoomImage(url, equipName, equipId, secondaryUrl);
-}
-
-function handleEquipmentImageGalleryKeydown(event, el) {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    openEquipmentImageFromGallery(el);
-  }
 }
 
 function buildEquipmentImageLabel(equipName, equipId) {
@@ -845,6 +842,9 @@ function closeImageZoom() {
   }
   imageZoomItems = [];
   imageZoomIndex = 0;
+  const trigger = imageZoomTrigger;
+  imageZoomTrigger = null;
+  if (trigger?.isConnected) trigger.focus();
 }
 
 document.addEventListener('keydown', (event) => {
@@ -949,10 +949,12 @@ function addToCart(equipId) {
 function updateCartBadge() {
   const count = cart.reduce((sum, item) => sum + item.qty, 0);
   const badge = document.getElementById('cartBadge');
+  const cartButton = document.getElementById('cartButton');
   if (badge) {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
+  if (cartButton) cartButton.style.display = count > 0 ? 'flex' : 'none';
 }
 
 function renderCart() {
