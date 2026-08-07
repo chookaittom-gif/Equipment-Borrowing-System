@@ -6,7 +6,7 @@
  */
 
 const DEFAULT_API_URL =
-  'https://script.google.com/macros/s/AKfycbzAJRYOIvx7x3Q-iMP2DF2sVHZ-y5lXw3u8XncxuGHQuXzJklrjG_eUQExCCETrn2cw/exec';
+  'https://script.google.com/macros/s/AKfycbzNAKkGNNQzU3bXBhcqk_Trw9aSSiOAmom6kw6KCl3AGdOAKsabD3j9j1XMEYOKnUR3CA/exec';
 const DEFAULT_FRONTEND_URL = 'https://equipment-borrowing-system-seven.vercel.app';
 
 function resolveApiUrl() {
