@@ -2030,6 +2030,14 @@ async function loadAdminUsersData(options = {}) {
   }
 }
 
+let userPinVisibilityState = {};
+
+function toggleUserPinVisibility(userId) {
+  if (!userId) return;
+  userPinVisibilityState[userId] = !userPinVisibilityState[userId];
+  renderAdminUsersTable();
+}
+
 function renderAdminUsersTable() {
   const tbody = document.getElementById('admin-users-tbody');
   const search = (document.getElementById('admin-user-search')?.value || '').toLowerCase().trim();
@@ -2044,24 +2052,39 @@ function renderAdminUsersTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(u => `
-    <tr class="table-row">
-      <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(u.userId)}</td>
-      <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(u.name)}</td>
-      <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
-      <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
-      <td class="px-6 py-4 text-center">
-        <div class="table-action-btns">
-          <button onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
-            <i class="fa-solid fa-user-pen"></i> สิทธิ์
-          </button>
-          <button onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
-            <i class="fa-solid fa-user-minus"></i> ลบ
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  const isSuperAdmin = currentUser?.role === 'Super Admin'
+    || document.getElementById('admin-user-role')?.textContent?.trim() === 'Super Admin';
+
+  tbody.innerHTML = filtered.map(u => {
+    const isPinVisible = !!userPinVisibilityState[u.userId];
+    const displayPin = isPinVisible ? (u.pin || '-') : '••••••';
+    const eyeIconClass = isPinVisible ? 'fa-eye-slash' : 'fa-eye';
+    const pinTitle = isPinVisible ? 'ซ่อนรหัสผ่าน' : 'ดูรหัสผ่าน';
+
+    return `
+      <tr class="table-row">
+        <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(u.userId)}</td>
+        <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(u.name)}</td>
+        <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
+        <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
+        <td class="px-6 py-4 text-center">
+          <div class="table-action-btns">
+            ${isSuperAdmin ? `
+              <button type="button" onclick="toggleUserPinVisibility('${escapeHtml(u.userId)}')" class="btn-action-view-pin" title="${pinTitle}" aria-label="${pinTitle}">
+                <i class="fa-solid ${eyeIconClass}"></i> <span class="font-mono text-xs font-bold">${escapeHtml(displayPin)}</span>
+              </button>
+            ` : ''}
+            <button type="button" onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
+              <i class="fa-solid fa-user-pen"></i> สิทธิ์
+            </button>
+            <button type="button" onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
+              <i class="fa-solid fa-user-minus"></i> ลบ
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function openUserModal() {

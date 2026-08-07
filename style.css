@@ -28,7 +28,7 @@
   --shadow-card: 0 6px 15px rgba(15, 23, 42, 0.08);
   --shadow-card-hover: 0 12px 25px rgba(2, 132, 199, 0.15);
   --radius-card: 18px;
-  --equipment-media-aspect: 4 / 3;
+  --equipment-media-aspect: 16 / 9;
   --motion-fast: 160ms;
   --motion-standard: 220ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1360,8 +1360,20 @@ body {
   color: #ffffff !important;
 }
 
+.btn-action-view-pin {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.btn-action-view-pin:hover {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}
+
 .btn-action-edit,
-.btn-action-delete {
+.btn-action-delete,
+.btn-action-view-pin {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1379,7 +1391,8 @@ body {
 }
 
 .btn-action-edit:hover,
-.btn-action-delete:hover {
+.btn-action-delete:hover,
+.btn-action-view-pin:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -1389,7 +1402,8 @@ body {
     gap: 8px;
   }
   .btn-action-edit,
-  .btn-action-delete {
+  .btn-action-delete,
+  .btn-action-view-pin {
     min-height: 44px;
     padding: 10px 16px;
     font-size: 13px;
