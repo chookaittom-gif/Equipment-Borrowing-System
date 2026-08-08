@@ -383,8 +383,21 @@ function toJavaScriptString(value) {
 const EQUIPMENT_IMAGE_FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22250%22 viewBox=%220 0 400 250%22%3E%3Crect width=%22400%22 height=%22250%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2216%22 fill=%22%2394a3b8%22%3E%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%AD%E0%B8%B8%E0%B8%9B%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B9%8C%3C/text%3E%3C/svg%3E";
 
+function getLegacyDriveThumbnailUrl(url) {
+  const match = String(url || '').match(/https:\/\/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]{25,})=w(\d+)/i);
+  return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w${match[2]}` : '';
+}
+
 function handleEquipmentImageError(img) {
   if (!img) return;
+
+  const fallbackUrl = getLegacyDriveThumbnailUrl(img.currentSrc || img.src);
+  if (fallbackUrl && img.dataset.driveFallbackTried !== 'true') {
+    img.dataset.driveFallbackTried = 'true';
+    img.src = fallbackUrl;
+    return;
+  }
+
   img.onerror = null;
   img.src = EQUIPMENT_IMAGE_FALLBACK;
 }
@@ -592,7 +605,7 @@ function formatImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
   // Convert Google Drive view/share URLs to direct thumbnail URLs
   const driveMatch = url.match(/(?:file\/d\/|id=|\/d\/)([a-zA-Z0-9_-]{25,})/);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w${w}`;
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}=w${w}`;
   }
   return normalizeEquipmentImageWidth(url, w);
 }
@@ -660,12 +673,16 @@ function renderEquipmentGrid() {
   const totalPages = Math.ceil(filteredEquipment.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const pageItems = filteredEquipment.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const priorityImageCount = window.matchMedia('(min-width: 1024px)').matches ? 3
+    : window.matchMedia('(min-width: 768px)').matches ? 2
+      : 1;
 
-  grid.innerHTML = pageItems.map(item => {
+  grid.innerHTML = pageItems.map((item, index) => {
     const available = Number(item.available) || 0;
     const total = Number(item.total) || 0;
     const isAvailable = available > 0;
     const isCartAdded = cart.some(c => c.id === item.id);
+    const isPriorityImage = index < priorityImageCount;
 
     const catLabel = getCategoryLabel(item.category);
     const listingImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
@@ -676,7 +693,7 @@ function renderEquipmentGrid() {
       <div class="equipment-card">
         <div class="image-gallery">
           <button type="button" class="equipment-image-trigger" data-src="${escapeHtml(fullImgUrl)}" data-secondary-src="${escapeHtml(secondaryFullImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม">
-            <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+            <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="${isPriorityImage ? 'eager' : 'lazy'}" fetchpriority="${isPriorityImage ? 'high' : 'auto'}" decoding="async" onerror="handleEquipmentImageError(this)">
           </button>
           <button type="button" class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code ของ ${escapeHtml(item.name)}" aria-label="ดู QR Code ของ ${escapeHtml(item.name)}">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
