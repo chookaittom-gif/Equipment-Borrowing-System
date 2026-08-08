@@ -229,6 +229,24 @@ body {
   box-shadow: 0 4px 20px rgba(2, 132, 199, 0.2);
 }
 
+.site-header .site-logo-frame {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.site-header .site-logo {
+  width: auto;
+  height: 5rem;
+  max-width: 220px;
+  object-fit: contain;
+}
+
 .site-header h1 {
   line-height: 1.3;
   margin: 0;
@@ -285,8 +303,10 @@ body {
     min-width: 0;
     gap: 0.75rem;
   }
-  .site-header img {
-    width: 4.75rem !important;
+  .site-header .site-logo {
+    width: auto !important;
+    height: 3rem !important;
+    max-width: 4.75rem;
     max-height: 3rem !important;
   }
   .site-header h1 {
