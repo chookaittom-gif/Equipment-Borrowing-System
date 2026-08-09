@@ -1856,6 +1856,9 @@ function openEquipModal(action, equipId = null) {
   if (!modal || !form) return;
 
   form.reset();
+  document.querySelectorAll('#imageInput1, #imageInput2').forEach(input => {
+    input.dataset.imageProcessing = 'false';
+  });
   document.getElementById('preview1Container')?.classList.add('hidden');
   document.getElementById('preview2Container')?.classList.add('hidden');
 
@@ -1891,15 +1894,26 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageAvailable').value = item.available;
 
     const sampleImg = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
-    const img1Src = item.image1 || sampleImg;
+    const img1Src = formatImageUrl(item.image1, EQUIPMENT_IMAGE_FULL_WIDTH) || sampleImg;
     if (img1Src) {
       const p1 = document.getElementById('preview1');
-      if (p1) { p1.src = img1Src; document.getElementById('preview1Container').classList.remove('hidden'); }
+      if (p1) {
+        p1.dataset.driveFallbackTried = 'false';
+        p1.onerror = () => handleEquipmentImageError(p1);
+        p1.src = img1Src;
+        document.getElementById('preview1Container').classList.remove('hidden');
+      }
       document.getElementById('image1Url').value = item.image1 || '';
     }
-    if (item.image2) {
+    const img2Src = formatImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
+    if (img2Src) {
       const p2 = document.getElementById('preview2');
-      if (p2) { p2.src = item.image2; document.getElementById('preview2Container').classList.remove('hidden'); }
+      if (p2) {
+        p2.dataset.driveFallbackTried = 'false';
+        p2.onerror = () => handleEquipmentImageError(p2);
+        p2.src = img2Src;
+        document.getElementById('preview2Container').classList.remove('hidden');
+      }
       document.getElementById('image2Url').value = item.image2 || '';
     }
   } else {
@@ -1925,18 +1939,64 @@ function updateStorageLocationOtherVisibility() {
   }
 }
 
-function previewImage(input, previewId) {
-  if (input.files && input.files[0]) {
+function convertImageToWebp(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = document.getElementById(previewId);
-      const container = document.getElementById(`${previewId}Container`);
-      if (img && container) {
-        img.src = e.target.result;
-        container.classList.remove('hidden');
-      }
+    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+    reader.onload = () => {
+      const source = new Image();
+      source.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+      source.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = source.naturalWidth;
+        canvas.height = source.naturalHeight;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('เบราว์เซอร์ไม่รองรับการแปลงรูปภาพ'));
+          return;
+        }
+
+        // ponytail: browser-native conversion avoids adding a GAS image dependency.
+        try {
+          context.drawImage(source, 0, 0);
+          const webpData = canvas.toDataURL('image/webp', 0.85);
+          resolve(webpData.startsWith('data:image/webp') ? webpData : String(reader.result || ''));
+        } catch (error) {
+          reject(new Error('ไม่สามารถแปลงรูปภาพเป็น WebP ได้'));
+        }
+      };
+      source.src = String(reader.result || '');
     };
-    reader.readAsDataURL(input.files[0]);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function previewImage(input, previewId) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.type && !file.type.startsWith('image/')) {
+    input.value = '';
+    Swal.fire('อัปโหลดไม่สำเร็จ', 'กรุณาเลือกไฟล์รูปภาพ', 'error');
+    return;
+  }
+
+  input.dataset.imageProcessing = 'true';
+  try {
+    const imageData = await convertImageToWebp(file);
+    if (input.files?.[0] !== file) return;
+
+    input.dataset.imageProcessing = 'false';
+    const img = document.getElementById(previewId);
+    const container = document.getElementById(`${previewId}Container`);
+    if (img && container) {
+      img.src = imageData;
+      container.classList.remove('hidden');
+    }
+  } catch (error) {
+    if (input.files?.[0] !== file) return;
+    input.dataset.imageProcessing = 'false';
+    input.value = '';
+    Swal.fire('อัปโหลดไม่สำเร็จ', error.message || 'ไม่สามารถเตรียมรูปภาพได้', 'error');
   }
 }
 
@@ -1949,7 +2009,10 @@ function removeImage(previewId) {
 
   if (img) img.src = '';
   if (container) container.classList.add('hidden');
-  if (fileInput) fileInput.value = '';
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.dataset.imageProcessing = 'false';
+  }
   if (hiddenUrl) hiddenUrl.value = '';
 }
 
@@ -1969,6 +2032,16 @@ async function handleEquipSubmit(event) {
 
   const p1Img = document.getElementById('preview1')?.src || '';
   const p2Img = document.getElementById('preview2')?.src || '';
+  const imageInput1 = document.getElementById('imageInput1');
+  const imageInput2 = document.getElementById('imageInput2');
+  const hasNewImage1 = Boolean(imageInput1?.files?.[0]);
+  const hasNewImage2 = Boolean(imageInput2?.files?.[0]);
+  const isImageProcessing = imageInput1?.dataset.imageProcessing === 'true'
+    || imageInput2?.dataset.imageProcessing === 'true';
+  if (isImageProcessing) {
+    Swal.fire('กำลังเตรียมรูปภาพ', 'โปรดรอการเตรียมรูปภาพให้เสร็จก่อนบันทึก', 'info');
+    return;
+  }
   const newId = form.id.value.trim();
   const originalId = (document.getElementById('manageOriginalId')?.value || '').trim() || newId;
 
@@ -1987,8 +2060,8 @@ async function handleEquipSubmit(event) {
     location: locationVal,
     total: Number(form.total.value),
     available: Number(form.available.value),
-    image1: p1Img.startsWith('data:image') ? p1Img : form.image1Url.value,
-    image2: p2Img.startsWith('data:image') ? p2Img : form.image2Url.value
+    image1: hasNewImage1 && p1Img.startsWith('data:image') ? p1Img : form.image1Url.value,
+    image2: hasNewImage2 && p2Img.startsWith('data:image') ? p2Img : form.image2Url.value
   };
 
   try {
