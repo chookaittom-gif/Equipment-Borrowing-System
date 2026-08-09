@@ -610,6 +610,12 @@ function formatImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
   return normalizeEquipmentImageWidth(url, w);
 }
 
+function getUploadedEquipmentImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
+  if (typeof rawUrl !== 'string' || !/^https:\/\/(?:drive\.google\.com|lh3\.googleusercontent\.com)\//i.test(rawUrl.trim())) return '';
+  const formatted = formatImageUrl(rawUrl, width);
+  return /^https:\/\/lh3\.googleusercontent\.com\/d\//i.test(formatted) ? formatted : '';
+}
+
 function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
   if (!item) return '';
   const formatted1 = formatImageUrl(item.image1, width);
@@ -687,7 +693,7 @@ function renderEquipmentGrid() {
     const catLabel = getCategoryLabel(item.category);
     const listingImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
     const fullImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
-    const secondaryFullImgUrl = formatImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
+    const secondaryFullImgUrl = getUploadedEquipmentImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
 
     return `
       <div class="equipment-card">
@@ -1856,6 +1862,16 @@ function openEquipModal(action, equipId = null) {
   if (!modal || !form) return;
 
   form.reset();
+  ['preview1', 'preview2'].forEach(previewId => {
+    const preview = document.getElementById(previewId);
+    if (preview) {
+      preview.src = '';
+      preview.onerror = null;
+      delete preview.dataset.driveFallbackTried;
+    }
+  });
+  document.getElementById('image1Url').value = '';
+  document.getElementById('image2Url').value = '';
   document.querySelectorAll('#imageInput1, #imageInput2').forEach(input => {
     input.dataset.imageProcessing = 'false';
   });
@@ -1905,7 +1921,7 @@ function openEquipModal(action, equipId = null) {
       }
       document.getElementById('image1Url').value = item.image1 || '';
     }
-    const img2Src = formatImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
+    const img2Src = getUploadedEquipmentImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
     if (img2Src) {
       const p2 = document.getElementById('preview2');
       if (p2) {
