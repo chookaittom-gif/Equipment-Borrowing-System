@@ -31,7 +31,7 @@ function resolveFrontendUrl() {
 // ==========================================
 const API_DEFAULT_TIMEOUT_MS = 30000;
 const API_HEAVY_TIMEOUT_MS = 120000;
-const API_MAX_GET_ATTEMPTS = 2;
+const API_MAX_GET_ATTEMPTS = 3;
 const API_RETRYABLE_HTTP = new Set([404, 429, 500, 502, 503, 504]);
 const API_RETRYABLE_CODES = new Set(['SYSTEM_BUSY', 'TEMPORARY_ERROR', 'RATE_LIMITED']);
 const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
@@ -197,8 +197,8 @@ async function apiRequest(action, payload = {}, options = {}) {
       }
 
       if (json.success === false) {
-        const code = json.error?.code || 'SERVER_ERROR';
-        const errMsg = json.error?.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
+        const code = json.error?.code || json.data?.errorCode || 'SERVER_ERROR';
+        const errMsg = json.error?.message || json.data?.message || json.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
         const apiErr = createApiError(errMsg, {
           action,
           httpStatus: response.status,
@@ -405,6 +405,8 @@ function handleEquipmentImageError(img) {
 // ==========================================
 // Initialization & Navigation
 // ==========================================
+let pendingBorrowEquipId = null;
+
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const view = urlParams.get('view');
@@ -422,19 +424,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const action = urlParams.get('action');
     const equipId = urlParams.get('id');
     if (action === 'borrow' && equipId) {
-      setTimeout(() => {
-        openBorrowModalSingle(equipId);
-      }, 800);
+      pendingBorrowEquipId = equipId;
     }
   }
 });
 
+function closeMobileMenu() {
+  const nav = document.getElementById('desktop-nav');
+  const btn = document.getElementById('mobile-menu-button');
+  if (nav) nav.classList.remove('mobile-menu-open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
 function toggleMobileMenu() {
   const nav = document.getElementById('desktop-nav');
-  if (nav) nav.classList.toggle('mobile-menu-open');
+  const btn = document.getElementById('mobile-menu-button');
+  if (!nav) return;
+  const open = nav.classList.toggle('mobile-menu-open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
 function switchTab(tabName) {
+  closeMobileMenu();
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active'));
   document.getElementById('borrow-section')?.classList.add('hidden-section');
   document.getElementById('history-section')?.classList.add('hidden-section');
@@ -498,6 +509,12 @@ async function loadData() {
         if (!document.getElementById('admin-reports')?.classList.contains('hidden-section')) {
           renderAdminReports();
         }
+      }
+
+      if (pendingBorrowEquipId) {
+        const borrowEquipId = pendingBorrowEquipId;
+        pendingBorrowEquipId = null;
+        openBorrowModalSingle(borrowEquipId);
       }
     } else {
       throw new Error(res.message || 'ไม่สามารถโหลดข้อมูลได้');
@@ -1053,22 +1070,19 @@ function initSignatureCanvas() {
   if (!signatureCanvas) return;
   signatureCtx = signatureCanvas.getContext('2d');
 
-  function resizeCanvas() {
-    const rect = signatureCanvas.getBoundingClientRect();
-    signatureCanvas.width = rect.width || 400;
-    signatureCanvas.height = 160;
-    clearSignature();
-  }
-  resizeCanvas();
-
   function getPos(e) {
     const rect = signatureCanvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    const point = e.touches && e.touches[0] ? e.touches[0] : e;
+    const scaleX = signatureCanvas.width / (rect.width || 1);
+    const scaleY = signatureCanvas.height / (rect.height || 1);
+    return {
+      x: (point.clientX - rect.left) * scaleX,
+      y: (point.clientY - rect.top) * scaleY
+    };
   }
 
   function startDrawing(e) {
+    if (e.cancelable) e.preventDefault();
     isDrawingSignature = true;
     hasSignature = true;
     const pos = getPos(e);
@@ -1160,7 +1174,20 @@ function openBorrowModalFromCart() {
 
   prefillBorrowRoomFromCart();
   if (modal) modal.classList.remove('hidden');
-  clearSignature();
+  requestAnimationFrame(() => {
+    resizeSignatureCanvasForDisplay();
+    clearSignature();
+  });
+}
+
+function resizeSignatureCanvasForDisplay() {
+  if (!signatureCanvas || !signatureCtx) return;
+  const rect = signatureCanvas.getBoundingClientRect();
+  const displayWidth = Math.max(1, Math.round(rect.width) || 400);
+  if (signatureCanvas.width !== displayWidth || signatureCanvas.height !== 160) {
+    signatureCanvas.width = displayWidth;
+    signatureCanvas.height = 160;
+  }
 }
 
 function closeModal() {
@@ -1246,7 +1273,7 @@ async function handleBorrowSubmit(event) {
     requestId: borrowSubmitRequestId,
     borrowerName: form.borrowerName.value,
     email: form.email.value,
-    phone: form.phone.value,
+    phone: String(form.phone.value || '').trim(),
     returnDate: form.returnDate.value,
     borrowRoom: roomVal,
     reason: form.reason.value,

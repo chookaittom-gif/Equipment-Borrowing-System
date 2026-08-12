@@ -1955,6 +1955,10 @@ body {
     flex-direction: column;
     gap: 12px;
   }
+  .logo-frame {
+    width: min(330px, 100%);
+    max-width: 100%;
+  }
   .summary-table td {
     padding: 12px;
   }
