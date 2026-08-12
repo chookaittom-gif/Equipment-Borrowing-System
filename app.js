@@ -303,6 +303,66 @@ let signatureModalTrigger = null;
 let loadDataSeq = 0;
 let loadDataController = null;
 let borrowSubmitRequestId = null;
+const GET_DATA_CLIENT_CACHE_KEY = 'getDataClientCache';
+const GET_DATA_CLIENT_CACHE_MS = 5 * 60 * 1000;
+
+function readClientGetDataCache() {
+  try {
+    const raw = sessionStorage.getItem(GET_DATA_CLIENT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.savedAt || !parsed.data || parsed.data.status !== 'success') return null;
+    if (Date.now() - parsed.savedAt > GET_DATA_CLIENT_CACHE_MS) return null;
+    return parsed.data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeClientGetDataCache(data) {
+  try {
+    if (!data || data.status !== 'success') return;
+    sessionStorage.setItem(GET_DATA_CLIENT_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      data: {
+        status: 'success',
+        equipment: data.equipment || [],
+        transactions: data.transactions || []
+      }
+    }));
+  } catch (e) { /* ignore quota / private mode */ }
+}
+
+function applyLoadedData(res) {
+  equipmentData = res.equipment || [];
+  transactionData = res.transactions || [];
+  updateDashboardStats();
+  renderCategoryFilters();
+  filterEquipment();
+  document.getElementById('borrow-section')?.classList.remove('hidden-section');
+
+  const adminLayout = document.getElementById('admin-layout');
+  if (adminLayout && !adminLayout.classList.contains('hidden-section')) {
+    if (!document.getElementById('admin-equipment')?.classList.contains('hidden-section')) {
+      renderAdminEquipmentTable();
+    }
+    if (!document.getElementById('admin-transactions')?.classList.contains('hidden-section')) {
+      renderAdminTransactionsTable();
+    }
+    if (!document.getElementById('admin-dashboard')?.classList.contains('hidden-section')) {
+      renderAdminDashboard();
+    }
+    if (!document.getElementById('admin-reports')?.classList.contains('hidden-section')) {
+      renderAdminReports();
+    }
+  }
+
+  if (pendingBorrowEquipId) {
+    const borrowEquipId = pendingBorrowEquipId;
+    pendingBorrowEquipId = null;
+    openBorrowModalSingle(borrowEquipId);
+  }
+}
 
 function generateRequestId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -481,7 +541,13 @@ async function loadData() {
   const signal = loadDataController.signal;
 
   const spinner = document.getElementById('loading-spinner');
-  if (spinner) spinner.style.display = 'flex';
+  const cached = readClientGetDataCache();
+  if (cached) {
+    applyLoadedData(cached);
+    if (spinner) spinner.style.display = 'none';
+  } else if (spinner) {
+    spinner.style.display = 'flex';
+  }
 
   try {
     // GAS cold start / Sheets read can exceed 30s; keep spinner until heavy timeout.
@@ -489,40 +555,15 @@ async function loadData() {
     if (seq !== loadDataSeq) return;
 
     if (res && res.status === 'success') {
-      equipmentData = res.equipment || [];
-      transactionData = res.transactions || [];
-      updateDashboardStats();
-      renderCategoryFilters();
-      filterEquipment();
-      document.getElementById('borrow-section')?.classList.remove('hidden-section');
-
-      const adminLayout = document.getElementById('admin-layout');
-      if (adminLayout && !adminLayout.classList.contains('hidden-section')) {
-        if (!document.getElementById('admin-equipment')?.classList.contains('hidden-section')) {
-          renderAdminEquipmentTable();
-        }
-        if (!document.getElementById('admin-transactions')?.classList.contains('hidden-section')) {
-          renderAdminTransactionsTable();
-        }
-        if (!document.getElementById('admin-dashboard')?.classList.contains('hidden-section')) {
-          renderAdminDashboard();
-        }
-        if (!document.getElementById('admin-reports')?.classList.contains('hidden-section')) {
-          renderAdminReports();
-        }
-      }
-
-      if (pendingBorrowEquipId) {
-        const borrowEquipId = pendingBorrowEquipId;
-        pendingBorrowEquipId = null;
-        openBorrowModalSingle(borrowEquipId);
-      }
+      applyLoadedData(res);
+      writeClientGetDataCache(res);
     } else {
       throw new Error(res.message || 'ไม่สามารถโหลดข้อมูลได้');
     }
   } catch (err) {
     if (seq !== loadDataSeq) return;
     if (err && (err.errorCode === 'REQUEST_ABORTED' || err.name === 'AbortError')) return;
+    if (cached) return;
     Swal.fire({
       icon: 'error',
       title: 'เกิดข้อผิดพลาด',
