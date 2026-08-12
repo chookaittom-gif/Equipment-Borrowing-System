@@ -484,7 +484,8 @@ async function loadData() {
   if (spinner) spinner.style.display = 'flex';
 
   try {
-    const res = await apiRequest('getData', {}, { signal });
+    // GAS cold start / Sheets read can exceed 30s; keep spinner until heavy timeout.
+    const res = await apiRequest('getData', {}, { signal, timeout: API_HEAVY_TIMEOUT_MS });
     if (seq !== loadDataSeq) return;
 
     if (res && res.status === 'success') {
