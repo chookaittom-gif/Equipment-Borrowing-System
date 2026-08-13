@@ -35,10 +35,11 @@ const API_MAX_GET_ATTEMPTS = 3;
 const API_RETRYABLE_HTTP = new Set([404, 429, 500, 502, 503, 504]);
 const API_RETRYABLE_CODES = new Set(['SYSTEM_BUSY', 'TEMPORARY_ERROR', 'RATE_LIMITED']);
 const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
-const ADMIN_SESSION_MS = 6 * 60 * 60 * 1000;
 const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
 const ADMIN_USER_KEY = 'adminUser';
+const ADMIN_SESSION_TOKEN_KEY = 'adminSessionToken';
+const ADMIN_AUTH_ERROR_CODES = new Set(['UNAUTHORIZED', 'SESSION_EXPIRED']);
 
 function createApiError(message, fields) {
   const err = new Error(message);
@@ -47,6 +48,14 @@ function createApiError(message, fields) {
   err.errorCode = fields.errorCode || null;
   err.attempt = fields.attempt || 1;
   return err;
+}
+
+function getAdminSessionToken() {
+  try {
+    return localStorage.getItem(ADMIN_SESSION_TOKEN_KEY) || '';
+  } catch (e) {
+    return '';
+  }
 }
 
 function isNetworkFetchError(error) {
@@ -75,7 +84,8 @@ async function apiRequest(action, payload = {}, options = {}) {
   const isPost = options.method === 'POST' || [
     'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
     'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
-    'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm'
+    'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm',
+    'getUsers', 'logoutAdmin'
   ].includes(action);
 
   const maxAttempts = isPost ? 1 : API_MAX_GET_ATTEMPTS;
@@ -103,7 +113,11 @@ async function apiRequest(action, payload = {}, options = {}) {
       let response;
       if (isPost) {
         // Use text/plain body to prevent CORS preflight OPTIONS block on script.google.com
-        const postBody = JSON.stringify({ action, payload });
+        const postBody = JSON.stringify({
+          action,
+          payload,
+          sessionToken: getAdminSessionToken()
+        });
         response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -199,6 +213,9 @@ async function apiRequest(action, payload = {}, options = {}) {
       if (json.success === false) {
         const code = json.error?.code || json.data?.errorCode || 'SERVER_ERROR';
         const errMsg = json.error?.message || json.data?.message || json.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์';
+        if (ADMIN_AUTH_ERROR_CODES.has(code)) {
+          handleAdminAuthorizationError();
+        }
         const apiErr = createApiError(errMsg, {
           action,
           httpStatus: response.status,
@@ -1452,10 +1469,11 @@ function closeSignatureModal() {
 // ==========================================
 // Admin Login & Panel Management
 // ==========================================
-function persistAdminSession(user) {
+function persistAdminSession(user, sessionToken, expiresAt) {
   try {
-    localStorage.setItem(ADMIN_SESSION_EXPIRY_KEY, String(Date.now() + ADMIN_SESSION_MS));
+    localStorage.setItem(ADMIN_SESSION_EXPIRY_KEY, String(expiresAt));
     if (user) localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    localStorage.setItem(ADMIN_SESSION_TOKEN_KEY, sessionToken);
   } catch (e) { /* ignore quota/private mode */ }
 }
 
@@ -1463,7 +1481,23 @@ function clearAdminSessionStorage() {
   try {
     localStorage.removeItem(ADMIN_SESSION_EXPIRY_KEY);
     localStorage.removeItem(ADMIN_USER_KEY);
+    localStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
   } catch (e) { /* ignore */ }
+}
+
+function handleAdminAuthorizationError() {
+  const wasAdmin = isAdminMode;
+  const adminLayout = document.getElementById('admin-layout');
+  const adminVisible = adminLayout && !adminLayout.classList.contains('hidden-section');
+  clearAdminSessionStorage();
+  isAdminMode = false;
+  currentUser = null;
+
+  if (wasAdmin || adminVisible) {
+    document.getElementById('admin-sidebar-overlay')?.classList.add('hidden');
+    document.getElementById('admin-sidebar')?.classList.remove('show-mobile');
+    switchTab('borrow');
+  }
 }
 
 function applyAdminSessionUser(user) {
@@ -1481,10 +1515,14 @@ function checkAdminSession() {
   try {
     sessionExpiry = localStorage.getItem(ADMIN_SESSION_EXPIRY_KEY);
     storedUser = localStorage.getItem(ADMIN_USER_KEY);
+    const sessionToken = localStorage.getItem(ADMIN_SESSION_TOKEN_KEY);
+    if (!sessionExpiry || !sessionToken) {
+      clearAdminSessionStorage();
+      return;
+    }
   } catch (e) {
     return;
   }
-  if (!sessionExpiry) return;
 
   const expiryTime = parseInt(sessionExpiry, 10);
   if (!Number.isFinite(expiryTime)) {
@@ -1506,14 +1544,9 @@ function checkAdminSession() {
   const wasAdmin = isAdminMode;
   const adminLayout = document.getElementById('admin-layout');
   const adminVisible = adminLayout && !adminLayout.classList.contains('hidden-section');
-  clearAdminSessionStorage();
-  isAdminMode = false;
-  currentUser = null;
+  handleAdminAuthorizationError();
 
   if (wasAdmin || adminVisible) {
-    document.getElementById('admin-sidebar-overlay')?.classList.add('hidden');
-    document.getElementById('admin-sidebar')?.classList.remove('show-mobile');
-    switchTab('borrow');
     Swal.fire({
       icon: 'warning',
       title: 'หมดเวลาการใช้งาน',
@@ -1586,9 +1619,9 @@ function openAdminLoginModal() {
     try {
       Swal.showLoading();
       const res = await apiRequest('verifyAdminPin', result.value);
-      if (res && res.success) {
+      if (res && res.success && res.user && res.sessionToken && res.expiresAt) {
         applyAdminSessionUser(res.user);
-        persistAdminSession(res.user);
+        persistAdminSession(res.user, res.sessionToken, res.expiresAt);
 
         document.getElementById('user-layout')?.classList.add('hidden-section');
         document.getElementById('admin-layout')?.classList.remove('hidden-section');
@@ -1623,13 +1656,20 @@ function closeLogoutConfirmModal() {
   document.body.style.overflow = '';
 }
 
-function confirmLogoutAdmin() {
+async function confirmLogoutAdmin() {
   closeLogoutConfirmModal();
-  clearAdminSessionStorage();
-  isAdminMode = false;
-  currentUser = null;
-  switchTab('borrow');
-  Swal.fire({ icon: 'success', title: 'ออกจากระบบแล้ว', timer: 1200, showConfirmButton: false });
+  try {
+    await apiRequest('logoutAdmin');
+    clearAdminSessionStorage();
+    isAdminMode = false;
+    currentUser = null;
+    switchTab('borrow');
+    Swal.fire({ icon: 'success', title: 'ออกจากระบบแล้ว', timer: 1200, showConfirmButton: false });
+  } catch (err) {
+    if (!ADMIN_AUTH_ERROR_CODES.has(err.errorCode)) {
+      Swal.fire('ออกจากระบบไม่สำเร็จ', err.message || 'ไม่สามารถยกเลิกเซสชันบนเซิร์ฟเวอร์ได้', 'error');
+    }
+  }
 }
 
 function logoutAdmin() {
@@ -2207,14 +2247,6 @@ async function loadAdminUsersData(options = {}) {
   }
 }
 
-let userPinVisibilityState = {};
-
-function toggleUserPinVisibility(userId) {
-  if (!userId) return;
-  userPinVisibilityState[userId] = !userPinVisibilityState[userId];
-  renderAdminUsersTable();
-}
-
 function renderAdminUsersTable() {
   const tbody = document.getElementById('admin-users-tbody');
   const search = (document.getElementById('admin-user-search')?.value || '').toLowerCase().trim();
@@ -2229,15 +2261,7 @@ function renderAdminUsersTable() {
     return;
   }
 
-  const isSuperAdmin = currentUser?.role === 'Super Admin'
-    || document.getElementById('admin-user-role')?.textContent?.trim() === 'Super Admin';
-
   tbody.innerHTML = filtered.map(u => {
-    const isPinVisible = !!userPinVisibilityState[u.userId];
-    const displayPin = isPinVisible ? (u.pin || '-') : '••••••';
-    const eyeIconClass = isPinVisible ? 'fa-eye-slash' : 'fa-eye';
-    const pinTitle = isPinVisible ? 'ซ่อนรหัสผ่าน' : 'ดูรหัสผ่าน';
-
     return `
       <tr class="table-row">
         <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(u.userId)}</td>
@@ -2246,11 +2270,6 @@ function renderAdminUsersTable() {
         <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
         <td class="px-6 py-4 text-center">
           <div class="table-action-btns">
-            ${isSuperAdmin ? `
-              <button type="button" onclick="toggleUserPinVisibility('${escapeHtml(u.userId)}')" class="btn-action-view-pin" title="${pinTitle}" aria-label="${pinTitle}">
-                <i class="fa-solid ${eyeIconClass}"></i> <span class="font-mono text-xs font-bold">${escapeHtml(displayPin)}</span>
-              </button>
-            ` : ''}
             <button type="button" onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
               <i class="fa-solid fa-user-pen"></i> สิทธิ์
             </button>
@@ -2356,8 +2375,8 @@ function editUserRoleHandler(targetUserId) {
 }
 
 async function deleteUserHandler(targetUserId) {
-  const currentU = currentUser ? currentUser.userId : '';
-  if (currentU && String(targetUserId).toLowerCase() === String(currentU).toLowerCase()) {
+  const currentUserId = currentUser ? currentUser.userId : '';
+  if (currentUserId && String(targetUserId).toLowerCase() === String(currentUserId).toLowerCase()) {
     Swal.fire('ไม่สามารถลบได้', 'ไม่สามารถลบบัญชีตนเองที่กำลังใช้งานอยู่ได้', 'warning');
     return;
   }
@@ -2375,7 +2394,7 @@ async function deleteUserHandler(targetUserId) {
   if (result.isConfirmed) {
     try {
       Swal.showLoading();
-      await apiRequest('deleteUser', { targetUserId, currentUserId: currentU });
+      await apiRequest('deleteUser', { targetUserId });
       Swal.fire({ icon: 'success', title: 'ลบผู้ใช้เรียบร้อยแล้ว', timer: 1200, showConfirmButton: false });
       loadAdminUsersData({ forceRefresh: true });
     } catch (err) {
