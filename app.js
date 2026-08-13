@@ -354,7 +354,11 @@ function writeClientGetDataCache(data) {
 
 function applyLoadedData(res) {
   equipmentData = res.equipment || [];
-  transactionData = res.transactions || [];
+  transactionData = (res.transactions || []).map(t => ({
+    ...t,
+    dateBorrow: formatThaiDate(t.dateBorrow),
+    dateReturn: formatThaiDate(t.dateReturn)
+  }));
   updateDashboardStats();
   renderCategoryFilters();
   filterEquipment();
@@ -405,11 +409,13 @@ function escapeHtml(value) {
 function formatThaiDate(dateInput, includeTime = false) {
   if (!dateInput) return '-';
   if (typeof dateInput === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(dateInput)) {
-    const p = dateInput.split('/');
-    if (p.length === 3) {
-      const dd = String(p[0]).padStart(2, '0');
-      const mm = String(p[1]).padStart(2, '0');
-      return `${dd}/${mm}/${p[2]}`;
+    const matched = String(dateInput).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (matched) {
+      const dd = String(matched[1]).padStart(2, '0');
+      const mm = String(matched[2]).padStart(2, '0');
+      let year = parseInt(matched[3], 10);
+      if (year < 2400) year += 543;
+      return `${dd}/${mm}/${year}`;
     }
     return dateInput;
   }
@@ -436,15 +442,16 @@ function formatThaiDate(dateInput, includeTime = false) {
   return `${day}/${month}/${year}`;
 }
 
-/** Normalize Thai date strings so "2/8/2569" and "02/08/2569" compare equal. */
+/** Normalize Thai date strings so "2/8/2569", "02/08/2569", and "13/8/2026" compare equal. */
 function normalizeThaiDateKey(value) {
   const raw = String(value || '').trim();
   if (!raw || raw === '-') return '';
 
-  const dateOnly = raw.split(/\s+/)[0];
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateOnly)) {
-    const parts = dateOnly.split('/');
-    return `${String(parts[0]).padStart(2, '0')}/${String(parts[1]).padStart(2, '0')}/${parts[2]}`;
+  const matched = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (matched) {
+    let year = parseInt(matched[3], 10);
+    if (year < 2400) year += 543;
+    return `${String(matched[1]).padStart(2, '0')}/${String(matched[2]).padStart(2, '0')}/${year}`;
   }
 
   return formatThaiDate(value);
@@ -598,8 +605,8 @@ function updateDashboardStats() {
   const available = equipmentData.reduce((sum, item) => sum + (Number(item.available) || 0), 0);
   const borrowed = total - available;
 
-  const todayStr = formatThaiDate(new Date());
-  const todayCount = transactionData.filter(t => t.dateBorrow === todayStr).length;
+  const todayKey = normalizeThaiDateKey(formatThaiDate(new Date()));
+  const todayCount = transactionData.filter(t => normalizeThaiDateKey(t.dateBorrow) === todayKey).length;
 
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-available').textContent = available;
@@ -1712,8 +1719,8 @@ function renderAdminDashboard() {
   const total = equipmentData.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
   const available = equipmentData.reduce((sum, item) => sum + (Number(item.available) || 0), 0);
   const borrowed = total - available;
-  const todayStr = formatThaiDate(new Date());
-  const todayCount = transactionData.filter(t => t.dateBorrow === todayStr).length;
+  const todayKey = normalizeThaiDateKey(formatThaiDate(new Date()));
+  const todayCount = transactionData.filter(t => normalizeThaiDateKey(t.dateBorrow) === todayKey).length;
 
   document.getElementById('admin-stat-total').textContent = total;
   document.getElementById('admin-stat-available').textContent = available;
