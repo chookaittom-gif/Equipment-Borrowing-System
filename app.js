@@ -85,7 +85,7 @@ async function apiRequest(action, payload = {}, options = {}) {
     'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
     'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
     'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm',
-    'getUsers', 'logoutAdmin'
+    'getUsers', 'getReportData', 'logoutAdmin'
   ].includes(action);
 
   const maxAttempts = isPost ? 1 : API_MAX_GET_ATTEMPTS;
@@ -1878,8 +1878,15 @@ async function approveBorrowConfirm(transId) {
   if (result.isConfirmed) {
     try {
       Swal.showLoading();
-      await apiRequest('approveBorrowRequest', { transId });
-      Swal.fire({ icon: 'success', title: 'อนุมัติเรียบร้อยแล้ว', timer: 1200, showConfirmButton: false });
+      const res = await apiRequest('approveBorrowRequest', { transId });
+      const hasNotificationWarnings = Array.isArray(res?.notificationWarnings) && res.notificationWarnings.length > 0;
+      Swal.fire({
+        icon: 'success',
+        title: 'อนุมัติเรียบร้อยแล้ว',
+        text: hasNotificationWarnings ? 'บันทึกข้อมูลสำเร็จแล้ว แต่การแจ้งเตือนบางช่องทางไม่สำเร็จ' : undefined,
+        timer: hasNotificationWarnings ? undefined : 1200,
+        showConfirmButton: hasNotificationWarnings
+      });
       loadData();
     } catch (err) {
       Swal.fire('อนุมัติไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการอนุมัติ', 'error');
@@ -1902,8 +1909,15 @@ async function rejectBorrowConfirm(transId) {
   if (reason !== undefined) {
     try {
       Swal.showLoading();
-      await apiRequest('rejectBorrowRequest', { transId, reason });
-      Swal.fire({ icon: 'success', title: 'ปฏิเสธคำขอเรียบร้อยแล้ว', timer: 1200, showConfirmButton: false });
+      const res = await apiRequest('rejectBorrowRequest', { transId, reason });
+      const hasNotificationWarnings = Array.isArray(res?.notificationWarnings) && res.notificationWarnings.length > 0;
+      Swal.fire({
+        icon: 'success',
+        title: 'ปฏิเสธคำขอเรียบร้อยแล้ว',
+        text: hasNotificationWarnings ? 'บันทึกข้อมูลสำเร็จแล้ว แต่การแจ้งเตือนบางช่องทางไม่สำเร็จ' : undefined,
+        timer: hasNotificationWarnings ? undefined : 1200,
+        showConfirmButton: hasNotificationWarnings
+      });
       loadData();
     } catch (err) {
       Swal.fire('ทำรายการไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการปฏิเสธ', 'error');
