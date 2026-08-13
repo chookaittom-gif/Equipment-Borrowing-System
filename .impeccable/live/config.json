@@ -1,0 +1,6 @@
+{
+  "files": ["index.html", "Report.html"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

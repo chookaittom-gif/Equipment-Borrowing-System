@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f1f5f9; color: #172033; font-family: 'Sarabun', Tahoma, sans-serif; font-size: 14px; }
+    .page { width: min(1120px, calc(100% - 32px)); margin: 28px auto; background: #fff; border-radius: 14px; box-shadow: 0 12px 32px rgba(15, 23, 42, .12); overflow: hidden; }
+    .report-header { display: flex; align-items: center; gap: 18px; padding: 24px 30px; border-bottom: 3px solid #0e7490; }
+    .logo-frame { width: 330px; height: 82px; overflow: hidden; flex: 0 0 auto; }
+    .logo-frame img { display: block; width: 390px; max-width: none; height: auto; transform: translateY(-84px); }
+    .header-copy { min-width: 0; }
+    .organization { color: #475569; margin: 0 0 6px; }
+    h1 { color: #075985; font-size: 25px; line-height: 1.25; margin: 0; }
+    .generated-at { margin: 7px 0 0; color: #64748b; }
+    .report-content { padding: 24px 30px 30px; }
+    .summary-table, .report-table { width: 100%; border-collapse: collapse; }
+    .summary-table { margin: 0 0 24px; border: 1px solid #cbd5e1; background: #f8fafc; }
+    .summary-table td { width: 25%; padding: 14px 16px; border-right: 1px solid #cbd5e1; vertical-align: top; }
+    .summary-table td:last-child { border-right: 0; }
+    .summary-label { display: block; color: #64748b; font-size: 12px; margin-bottom: 5px; }
+    .summary-value { color: #075985; font-size: 22px; font-weight: 700; }
+    .table-wrap { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
+    .report-table { min-width: 900px; table-layout: fixed; }
+    .report-table th { padding: 12px 10px; background: #075985; color: #fff; font-size: 13px; font-weight: 600; text-align: left; vertical-align: middle; }
+    .report-table td { padding: 12px 10px; border-top: 1px solid #dbe4ee; line-height: 1.55; vertical-align: top; overflow-wrap: anywhere; }
+    .report-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .report-table .center { text-align: center; }
+    .status { display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .status-borrowing { background: #fef3c7; color: #92400e; }
+    .status-returned { background: #dcfce7; color: #166534; }
+    .report-table th:nth-child(9), .report-table td:nth-child(9) { padding-left: 6px; padding-right: 6px; }
+    .signature { width: 52px; max-width: 100%; height: 36px; object-fit: contain; display: block; margin: 0 auto; }
+    .signature-button { display: block; width: 52px; max-width: 100%; margin: 0 auto; padding: 0; background: transparent; border: 0; border-radius: 4px; cursor: zoom-in; }
+    .signature-button:hover .signature { opacity: .78; }
+    .signature-button:focus-visible, .signature-modal-close:focus-visible { outline: 2px solid #0284c7; outline-offset: 3px; }
+    .signature-modal[hidden] { display: none; }
+    .signature-modal { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(15, 23, 42, .58); }
+    .signature-modal-dialog { width: min(640px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .24); }
+    .signature-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .signature-modal-title { margin: 0; color: #075985; font-size: 20px; }
+    .signature-modal-meta { margin: 5px 0 0; color: #475569; }
+    .signature-modal-close { padding: 6px 10px; background: #64748b; }
+    .signature-modal-image { display: block; width: 100%; max-height: calc(100vh - 190px); object-fit: contain; background: #f8fafc; }
+    .empty, .error { padding: 36px 20px; text-align: center; color: #64748b; }
+    .error { color: #b91c1c; }
+    .report-footer { padding: 18px 30px 24px; color: #64748b; font-size: 12px; }
+    .actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 30px 24px; }
+    button { border: 0; border-radius: 7px; padding: 10px 16px; background: #0284c7; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #64748b; }
+    @media (max-width: 700px) { .page { width: 100%; margin: 0; border-radius: 0; } .report-header, .report-content { padding: 20px; } .report-header { align-items: flex-start; flex-direction: column; gap: 12px; } .summary-table td { padding: 12px; } .actions, .report-footer { padding-left: 20px; padding-right: 20px; } }
+    @media print { @page { size: A4 landscape; margin: 10mm; } body { background: #fff; font-size: 11px; } .page { width: 100%; margin: 0; box-shadow: none; } .report-header { padding: 0 0 12px; } .report-content { padding: 16px 0; } .summary-table { margin-bottom: 16px; } .summary-table td, .report-table th, .report-table td { padding: 7px; } .report-table th:nth-child(9), .report-table td:nth-child(9) { padding-left: 4px; padding-right: 4px; } .signature { width: 48px; height: 32px; } .signature-button { cursor: default; } .signature-modal { display: none !important; } .report-footer { padding: 10px 0 0; } .actions { display: none; } .table-wrap { overflow: visible; border-radius: 0; } .report-table { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="report-header">
+      <div class="logo-frame" id="logoFrame" hidden><img id="logo" alt="ระบบยืม-คืนอุปกรณ์"></div>
+      <div class="header-copy">
+        <p class="organization">มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษาลำปาง</p>
+        <h1 id="reportTitle">กำลังจัดเตรียมรายงาน</h1>
+        <p class="generated-at" id="generatedAt"></p>
+      </div>
+    </header>
+    <section class="report-content" id="reportContent"><div class="empty">กำลังโหลดข้อมูลรายงาน...</div></section>
+    <footer class="report-footer">ระบบยืม-คืน v1.0 | © 2026 มหาวิทยาลัยสวนดุสิต ศูนย์การศึกษาลำปาง</footer>
+    <div class="actions"><button type="button" onclick="window.print()">พิมพ์รายงาน</button><button type="button" class="secondary" onclick="window.close()">ปิดหน้าต่าง</button></div>
+  </main>
+  <div id="signatureModal" class="signature-modal" hidden role="dialog" aria-modal="true" aria-labelledby="signatureModalTitle" onclick="handleSignatureModalBackdrop(event)">
+    <div class="signature-modal-dialog" role="document">
+      <div class="signature-modal-header">
+        <div>
+          <h2 id="signatureModalTitle" class="signature-modal-title">ลายเซ็นผู้ยืม</h2>
+          <p id="signatureModalMeta" class="signature-modal-meta"></p>
+        </div>
+        <button type="button" class="signature-modal-close" onclick="closeSignatureModal()" aria-label="ปิดภาพลายเซ็น">ปิด</button>
+      </div>
+      <img id="signatureModalImage" class="signature-modal-image" alt="">
+    </div>
+  </div>
+  <script>
+    const reportType = '<?= reportType ?>';
+
+    function escapeHtml(value) {
+      return String(value === null || value === undefined ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function getStatusClass(status) {
+      return status === 'กำลังยืม' ? 'status-borrowing' : 'status-returned';
+    }
+
+    let signatureModalTrigger = null;
+
+    function toJavaScriptString(value) {
+      return JSON.stringify(String(value === null || value === undefined ? '' : value))
+        .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/'/g, '\\u0027');
+    }
+
+    function showSignatureModal(signatureUrl, transId, borrowerName, trigger) {
+      const modal = document.getElementById('signatureModal');
+      const image = document.getElementById('signatureModalImage');
+      const meta = document.getElementById('signatureModalMeta');
+      if (!modal || !image || !meta) return;
+      signatureModalTrigger = trigger || null;
+      image.src = signatureUrl;
+      image.alt = `ลายเซ็นของ ${borrowerName}`;
+      meta.textContent = `รหัสธุรกรรม: ${transId} | ผู้ยืม: ${borrowerName}`;
+      modal.hidden = false;
+      modal.querySelector('.signature-modal-close').focus();
+    }
+
+    function closeSignatureModal() {
+      const modal = document.getElementById('signatureModal');
+      const image = document.getElementById('signatureModalImage');
+      if (!modal || modal.hidden) return;
+      modal.hidden = true;
+      if (image) image.removeAttribute('src');
+      if (signatureModalTrigger) signatureModalTrigger.focus();
+      signatureModalTrigger = null;
+    }
+
+    function handleSignatureModalBackdrop(event) {
+      if (event.target === event.currentTarget) closeSignatureModal();
+    }
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeSignatureModal();
+    });
+
+    function renderReport(report) {
+      if (!report || report.status !== 'success') {
+        showError((report && report.message) || 'ไม่สามารถโหลดข้อมูลรายงานได้');
+        return;
+      }
+      document.title = report.title;
+      document.getElementById('reportTitle').textContent = report.title;
+      document.getElementById('generatedAt').textContent = 'วันที่พิมพ์: ' + report.generatedAt;
+      if (report.logoUrl) {
+        const logo = document.getElementById('logo');
+        logo.onerror = () => document.getElementById('logoFrame').hidden = true;
+        logo.src = report.logoUrl;
+        document.getElementById('logoFrame').hidden = false;
+      }
+
+      const transactions = report.transactions || [];
+      const borrowingCount = transactions.filter(item => item.status === 'กำลังยืม').length;
+      const returnedCount = transactions.filter(item => item.status === 'คืนแล้ว').length;
+      const summary = `
+        <table class="summary-table" aria-label="สรุปรายงาน"><tbody><tr>
+          <td><span class="summary-label">จำนวนรายการ</span><span class="summary-value">${transactions.length}</span></td>
+          <td><span class="summary-label">กำลังยืม</span><span class="summary-value">${borrowingCount}</span></td>
+          <td><span class="summary-label">คืนแล้ว</span><span class="summary-value">${returnedCount}</span></td>
+          <td><span class="summary-label">ประเภทรายงาน</span><span class="summary-value">${escapeHtml(report.reportType === 'monthly' ? 'รายเดือน' : report.reportType === 'borrowing' ? 'กำลังยืม' : 'ทั้งหมด')}</span></td>
+        </tr></tbody></table>`;
+      if (!transactions.length) {
+        document.getElementById('reportContent').innerHTML = summary + '<div class="empty">ไม่พบรายการสำหรับรายงานนี้</div>';
+        return;
+      }
+      const rows = transactions.map((item, index) => {
+        const signatureUrl = String(item.signatureUrl || '').trim();
+        const signatureCell = signatureUrl ? `<button type="button" class="signature-button" onclick='showSignatureModal(${toJavaScriptString(signatureUrl)}, ${toJavaScriptString(item.transId)}, ${toJavaScriptString(item.borrowerName)}, this)' aria-label="ดูภาพลายเซ็นของ ${escapeHtml(item.borrowerName)}"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็นของ ${escapeHtml(item.borrowerName)}" onerror="this.closest(\'.signature-button\').remove()"></button>` : '-';
+        return `
+        <tr>
+          <td class="center">${index + 1}</td><td>${escapeHtml(item.transId)}</td><td>${escapeHtml(item.borrowerName)}<br><small>${escapeHtml(item.email)}</small></td>
+          <td>${escapeHtml(item.equipName)}</td><td class="center">${escapeHtml(item.qty)}</td><td>${escapeHtml(item.dateBorrow)}</td><td>${escapeHtml(item.dateReturn)}</td>
+          <td>${escapeHtml(item.borrowRoom || '-')}</td><td class="center">${signatureCell}</td>
+          <td><span class="status ${getStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('reportContent').innerHTML = summary + `
+        <div class="table-wrap"><table class="report-table"><thead><tr>
+          <th style="width:5%" class="center">ลำดับ</th><th style="width:12%">รหัสธุรกรรม</th><th style="width:17%">ผู้ยืม</th><th style="width:15%">อุปกรณ์</th>
+          <th style="width:7%" class="center">จำนวน</th><th style="width:10%">วันที่ยืม</th><th style="width:10%">กำหนดคืน</th><th style="width:10%">ห้องที่ใช้ยืม</th><th style="width:7%" class="center">ลายเซ็น</th><th style="width:10%">สถานะ</th>
+        </tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
+    function showError(message) {
+      document.getElementById('reportContent').innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+    }
+
+    google.script.run.withSuccessHandler(renderReport).withFailureHandler(() => showError('ไม่สามารถเชื่อมต่อระบบรายงานได้')).getReportData(reportType);
+  </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "S1",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\index.txt"
+    ],
+    "rationale": "ปรับ branding header/footer และ theme ฟ้า-ขาวผ่าน variables + selectors เดิม เพื่อลดผลกระทบ",
+    "risk": "low"
+  },
+  {
+    "id": "S2",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\index.txt"
+    ],
+    "rationale": "เพิ่ม borrowRoom และ canvas signature ใน borrow modal พร้อม client validation และป้องกัน submit ซ้ำ",
+    "risk": "medium"
+  },
+  {
+    "id": "S3",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\code.txt"
+    ],
+    "rationale": "ปรับ schema transactions แบบ append-only (คอลัมน์ 17-18) และทำ migration อย่างปลอดภัย",
+    "risk": "medium"
+  },
+  {
+    "id": "S4",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\code.txt"
+    ],
+    "rationale": "ปรับ saveBorrowRequest ให้ atomic มากขึ้น: validate -> stock check all -> upload signature once -> cut stock -> append all",
+    "risk": "high"
+  },
+  {
+    "id": "S5",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\code.txt",
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\index.txt"
+    ],
+    "rationale": "ส่งต่อ borrowRoom/signature ไป Telegram, Email, history/admin/report print และแสดง thumbnail signature",
+    "risk": "medium"
+  },
+  {
+    "id": "S6",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\index.txt",
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\code.txt"
+    ],
+    "rationale": "Regression/safety patch: contrast, mobile behavior, reset canvas on open/close/success, compatibility ข้อมูลเก่า",
+    "risk": "low"
+  },
+  {
+    "id": "S7",
+    "files": [
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\index.txt",
+      "D:\\Webapp\\ระบบยืม-คืนอุปกรณ์\\code.txt"
+    ],
+    "rationale": "Build-test checklist และทดสอบ flow หลักก่อนส่งมอบ",
+    "risk": "low"
+  }
+]
