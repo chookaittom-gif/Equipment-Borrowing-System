@@ -1615,7 +1615,10 @@ function openAdminLoginModal() {
       return { inputId, inputPin };
     }
   }).then(async (result) => {
-    if (!result.isConfirmed || !result.value) return;
+    if (!result.isConfirmed || !result.value) {
+      switchTab('borrow');
+      return;
+    }
     try {
       Swal.showLoading();
       const res = await apiRequest('verifyAdminPin', result.value);
