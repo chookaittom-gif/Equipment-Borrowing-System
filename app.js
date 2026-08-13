@@ -72,13 +72,17 @@ async function waitApiRetry(attemptIndex, retryAfterHeader) {
 async function apiRequest(action, payload = {}, options = {}) {
   const timeoutMs = options.timeout || API_DEFAULT_TIMEOUT_MS;
   const apiUrl = resolveApiUrl();
-  const isPost = options.method === 'POST' || [
+  const isReadAction = [
+    'getData', 'getUsers', 'getReportData', 'getLogoUrl'
+  ].includes(action);
+  const isMutatingPost = options.method === 'POST' || [
     'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
     'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
     'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm'
   ].includes(action);
+  const isPost = isMutatingPost || isReadAction;
 
-  const maxAttempts = isPost ? 1 : API_MAX_GET_ATTEMPTS;
+  const maxAttempts = isMutatingPost ? 1 : API_MAX_GET_ATTEMPTS;
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -147,7 +151,7 @@ async function apiRequest(action, payload = {}, options = {}) {
           attempt
         });
 
-        if (!isPost && API_RETRYABLE_HTTP.has(response.status) && attempt < maxAttempts) {
+        if (!isMutatingPost && API_RETRYABLE_HTTP.has(response.status) && attempt < maxAttempts) {
           lastError = httpErr;
           await waitApiRetry(attempt - 1, response.headers.get('Retry-After'));
           continue;
@@ -206,7 +210,7 @@ async function apiRequest(action, payload = {}, options = {}) {
           attempt
         });
 
-        if (!isPost && API_RETRYABLE_CODES.has(code) && attempt < maxAttempts) {
+        if (!isMutatingPost && API_RETRYABLE_CODES.has(code) && attempt < maxAttempts) {
           lastError = apiErr;
           await waitApiRetry(attempt - 1, null);
           continue;
@@ -235,7 +239,7 @@ async function apiRequest(action, payload = {}, options = {}) {
         });
       }
 
-      const retryable = !isPost && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
+      const retryable = !isMutatingPost && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
       let userFriendlyMessage = error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
       if (isNetworkFetchError(error)) {
         userFriendlyMessage = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (หากล็อกอินบัญชี Google หลายบัญชีพร้อมกัน ให้ลองเปิดหน้าเว็บใน โหมดไม่ระบุตัวตน / Incognito Window)';
