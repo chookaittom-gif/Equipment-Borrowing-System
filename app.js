@@ -34,6 +34,7 @@ const API_HEAVY_TIMEOUT_MS = 120000;
 const API_MAX_GET_ATTEMPTS = 3;
 const API_RETRYABLE_HTTP = new Set([404, 429, 500, 502, 503, 504]);
 const API_RETRYABLE_CODES = new Set(['SYSTEM_BUSY', 'TEMPORARY_ERROR', 'RATE_LIMITED']);
+const API_READ_ONLY_POST_ACTIONS = new Set(['getUsers', 'getReportData']);
 const ADMIN_USERS_CACHE_MS = 2 * 60 * 1000;
 const ADMIN_SESSION_CHECK_MS = 15000;
 const ADMIN_SESSION_EXPIRY_KEY = 'adminSessionExpiry';
@@ -88,7 +89,8 @@ async function apiRequest(action, payload = {}, options = {}) {
     'getUsers', 'getReportData', 'logoutAdmin'
   ].includes(action);
 
-  const maxAttempts = isPost ? 1 : API_MAX_GET_ATTEMPTS;
+  const canRetry = !isPost || API_READ_ONLY_POST_ACTIONS.has(action);
+  const maxAttempts = canRetry ? API_MAX_GET_ATTEMPTS : 1;
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -161,7 +163,7 @@ async function apiRequest(action, payload = {}, options = {}) {
           attempt
         });
 
-        if (!isPost && API_RETRYABLE_HTTP.has(response.status) && attempt < maxAttempts) {
+        if (canRetry && API_RETRYABLE_HTTP.has(response.status) && attempt < maxAttempts) {
           lastError = httpErr;
           await waitApiRetry(attempt - 1, response.headers.get('Retry-After'));
           continue;
@@ -223,7 +225,7 @@ async function apiRequest(action, payload = {}, options = {}) {
           attempt
         });
 
-        if (!isPost && API_RETRYABLE_CODES.has(code) && attempt < maxAttempts) {
+        if (canRetry && API_RETRYABLE_CODES.has(code) && attempt < maxAttempts) {
           lastError = apiErr;
           await waitApiRetry(attempt - 1, null);
           continue;
@@ -252,7 +254,7 @@ async function apiRequest(action, payload = {}, options = {}) {
         });
       }
 
-      const retryable = !isPost && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
+      const retryable = canRetry && (abortedByTimeout || isNetworkFetchError(error)) && attempt < maxAttempts;
       let userFriendlyMessage = error.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
       if (isNetworkFetchError(error)) {
         userFriendlyMessage = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (หากล็อกอินบัญชี Google หลายบัญชีพร้อมกัน ให้ลองเปิดหน้าเว็บใน โหมดไม่ระบุตัวตน / Incognito Window)';
