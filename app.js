@@ -383,6 +383,12 @@ function applyLoadedData(res) {
   if (pendingBorrowEquipId) {
     const borrowEquipId = pendingBorrowEquipId;
     pendingBorrowEquipId = null;
+    try {
+      if (window.history && window.history.replaceState) {
+        const cleanUrl = window.location.pathname + (window.location.hash || '');
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    } catch (e) { /* ignore state error */ }
     openBorrowModalSingle(borrowEquipId);
   }
 }
@@ -1209,8 +1215,22 @@ function initFlatpickr() {
 
 function openBorrowModalSingle(equipId) {
   const item = equipmentData.find(e => e.id === equipId);
-  if (!item) return;
-  cart = [{ id: item.id, name: item.name, image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH), qty: 1, maxQty: Number(item.available) || 1 }];
+  if (!item) {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire('ไม่พบข้อมูลอุปกรณ์', `ไม่พบอุปกรณ์รหัส "${escapeHtml(equipId)}" ในระบบ`, 'warning');
+    }
+    return;
+  }
+
+  const available = Number(item.available) || 0;
+  if (available <= 0) {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire('อุปกรณ์หมด', `"${escapeHtml(item.name)}" ไม่มีคงเหลือให้ยืมในขณะนี้`, 'warning');
+    }
+    return;
+  }
+
+  cart = [{ id: item.id, name: item.name, image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH), qty: 1, maxQty: available }];
   updateCartBadge();
   openBorrowModalFromCart();
 }
