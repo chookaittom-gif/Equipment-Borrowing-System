@@ -1417,6 +1417,19 @@ body {
   gap: 6px;
 }
 
+.btn-action-view,
+.bg-sky-600 {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.btn-action-view:hover,
+.hover\:bg-sky-700:hover {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}
+
 .btn-action-edit,
 .bg-amber-500 {
   background-color: #f59e0b !important;
@@ -1443,6 +1456,7 @@ body {
   color: #ffffff !important;
 }
 
+.btn-action-view,
 .btn-action-edit,
 .btn-action-delete {
   display: inline-flex;
@@ -1461,6 +1475,7 @@ body {
   text-decoration: none;
 }
 
+.btn-action-view:hover,
 .btn-action-edit:hover,
 .btn-action-delete:hover {
   transform: translateY(-1px);
@@ -1471,6 +1486,7 @@ body {
   .table-action-btns {
     gap: 8px;
   }
+  .btn-action-view,
   .btn-action-edit,
   .btn-action-delete {
     min-height: 44px;

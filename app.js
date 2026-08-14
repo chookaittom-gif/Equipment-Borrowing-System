@@ -2303,10 +2303,13 @@ function renderAdminUsersTable() {
         <td class="px-6 py-4 text-gray-500">${escapeHtml(formatThaiDate(u.createdAt, true))}</td>
         <td class="px-6 py-4 text-center">
           <div class="table-action-btns">
-            <button type="button" onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
+            <button type="button" onclick="viewUserPasswordHandler('${escapeHtml(u.userId)}')" class="btn-action-view" aria-label="ดูรหัสผ่าน ${escapeHtml(u.userId)}">
+              <i class="fa-solid fa-key"></i> รหัส
+            </button>
+            <button type="button" onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit" aria-label="แก้ไขสิทธิ์ ${escapeHtml(u.userId)}">
               <i class="fa-solid fa-user-pen"></i> สิทธิ์
             </button>
-            <button type="button" onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete">
+            <button type="button" onclick="deleteUserHandler('${escapeHtml(u.userId)}')" class="btn-action-delete" aria-label="ลบผู้ใช้ ${escapeHtml(u.userId)}">
               <i class="fa-solid fa-user-minus"></i> ลบ
             </button>
           </div>
@@ -2314,6 +2317,93 @@ function renderAdminUsersTable() {
       </tr>
     `;
   }).join('');
+}
+
+function viewUserPasswordHandler(targetUserId) {
+  const user = adminUsersData.find(u => u.userId === targetUserId);
+  if (!user) return;
+
+  const pinText = user.pin ? String(user.pin) : 'ไม่มีข้อมูลรหัสผ่าน';
+  const roleBadge = user.role === 'Super Admin'
+    ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">Super Admin</span>'
+    : '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Staff</span>';
+
+  Swal.fire({
+    title: '<i class="fa-solid fa-key text-sky-600 mr-2"></i>ข้อมูลรหัสผ่านผู้ใช้งาน',
+    html: `
+      <div class="text-left space-y-4 pt-2">
+        <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-500 font-medium">ไอดีผู้ใช้ (UserID):</span>
+            <span class="font-mono font-bold text-sky-800">${escapeHtml(user.userId)}</span>
+          </div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-500 font-medium">ชื่อ-นามสกุล:</span>
+            <span class="font-semibold text-gray-800">${escapeHtml(user.name)}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500 font-medium">สิทธิ์การใช้งาน:</span>
+            <span>${roleBadge}</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+            <i class="fa-solid fa-lock text-sky-600 mr-1"></i>รหัสผ่าน (PIN)
+          </label>
+          <div class="relative flex items-center">
+            <input type="password" id="swal-view-pin" value="${escapeHtml(pinText)}" readonly class="swal2-input font-mono font-bold tracking-widest text-center text-lg text-gray-800 select-all" style="width:100%;margin:0;padding-right:85px;background-color:#f8fafc;cursor:default;">
+            <div class="absolute right-2 flex items-center gap-1">
+              <button type="button" id="swal-view-pin-toggle" class="p-2 text-gray-500 hover:text-sky-700 rounded-lg hover:bg-gray-200 transition" title="เปิด/ปิดการซ่อนรหัสผ่าน" aria-label="แสดงหรือซ่อนรหัสผ่าน">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button type="button" id="swal-view-pin-copy" class="p-2 text-gray-500 hover:text-emerald-700 rounded-lg hover:bg-gray-200 transition" title="คัดลอกรหัสผ่าน" aria-label="คัดลอกรหัสผ่าน">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+    confirmButtonText: '<i class="fa-solid fa-check mr-1"></i>ปิดหน้าต่าง',
+    confirmButtonColor: '#0284c7',
+    didOpen: () => {
+      const pinInput = document.getElementById('swal-view-pin');
+      const toggleBtn = document.getElementById('swal-view-pin-toggle');
+      const copyBtn = document.getElementById('swal-view-pin-copy');
+
+      if (toggleBtn && pinInput) {
+        toggleBtn.addEventListener('click', () => {
+          const isHidden = pinInput.type === 'password';
+          pinInput.type = isHidden ? 'text' : 'password';
+          toggleBtn.innerHTML = isHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+        });
+      }
+
+      if (copyBtn && pinInput) {
+        copyBtn.addEventListener('click', async () => {
+          if (!user.pin) {
+            Swal.showValidationMessage('ไม่มีข้อมูลรหัสผ่านให้คัดลอก');
+            return;
+          }
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(String(user.pin));
+            } else {
+              pinInput.select();
+              document.execCommand('copy');
+            }
+            copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i>';
+            setTimeout(() => {
+              copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+            }, 1500);
+          } catch (e) {
+            pinInput.select();
+          }
+        });
+      }
+    }
+  });
 }
 
 function openUserModal() {
