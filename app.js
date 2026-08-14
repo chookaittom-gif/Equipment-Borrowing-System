@@ -408,32 +408,39 @@ function escapeHtml(value) {
 
 function formatThaiDate(dateInput, includeTime = false) {
   if (!dateInput) return '-';
-  if (typeof dateInput === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(dateInput)) {
-    const matched = String(dateInput).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (matched) {
-      const dd = String(matched[1]).padStart(2, '0');
-      const mm = String(matched[2]).padStart(2, '0');
-      let year = parseInt(matched[3], 10);
-      if (year < 2400) year += 543;
-      return `${dd}/${mm}/${year}`;
+  const str = String(dateInput).trim();
+  const dmyMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const dd = String(dmyMatch[1]).padStart(2, '0');
+    const mm = String(dmyMatch[2]).padStart(2, '0');
+    let year = parseInt(dmyMatch[3], 10);
+    if (year < 2400) year += 543;
+    if (includeTime && dmyMatch[4] !== undefined && dmyMatch[5] !== undefined) {
+      const hh = String(dmyMatch[4]).padStart(2, '0');
+      const min = String(dmyMatch[5]).padStart(2, '0');
+      return `${dd}/${mm}/${year} ${hh}:${min} น.`;
     }
-    return dateInput;
+    return `${dd}/${mm}/${year}`;
   }
+
   let d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
   if (isNaN(d.getTime())) {
-    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
-      const parts = dateInput.split('T')[0].split('-');
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      const parts = str.split('T')[0].split('-');
       const day = String(parts[2]).padStart(2, '0');
       const month = String(parts[1]).padStart(2, '0');
-      const year = parseInt(parts[0], 10) + 543;
+      let year = parseInt(parts[0], 10);
+      if (year < 2400) year += 543;
       return `${day}/${month}/${year}`;
     }
-    return String(dateInput);
+    return str;
   }
+
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   let year = d.getFullYear();
   if (year < 2400) year += 543;
+
   if (includeTime) {
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
@@ -2293,7 +2300,7 @@ function renderAdminUsersTable() {
         <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(u.userId)}</td>
         <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(u.name)}</td>
         <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
-        <td class="px-6 py-4 text-gray-500">${escapeHtml(u.createdAt || '-')}</td>
+        <td class="px-6 py-4 text-gray-500">${escapeHtml(formatThaiDate(u.createdAt, true))}</td>
         <td class="px-6 py-4 text-center">
           <div class="table-action-btns">
             <button type="button" onclick="editUserRoleHandler('${escapeHtml(u.userId)}')" class="btn-action-edit">
