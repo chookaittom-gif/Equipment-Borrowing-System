@@ -1204,13 +1204,63 @@ function clearSignature() {
 
 function initFlatpickr() {
   const returnInput = document.querySelector('input[name="returnDate"]');
-  if (returnInput && typeof flatpickr !== 'undefined') {
-    flatpickr(returnInput, {
-      locale: 'th',
-      dateFormat: 'Y-m-d',
-      minDate: 'today'
-    });
-  }
+  if (!returnInput || typeof flatpickr === 'undefined') return;
+  if (returnInput._flatpickr) return;
+
+  const updateCalendarThaiYear = (instance) => {
+    if (!instance || !instance.currentYearElement) return;
+    const beYear = instance.currentYear + 543;
+    instance.currentYearElement.value = beYear;
+  };
+
+  flatpickr(returnInput, {
+    locale: (typeof flatpickr !== 'undefined' && flatpickr.l10ns && flatpickr.l10ns.th) ? 'th' : 'default',
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altInputClass: 'form-input',
+    altFormat: 'd/m/Y',
+    minDate: 'today',
+    formatDate: function(date, format, locale) {
+      if (format === 'd/m/Y') {
+        const d = String(date.getDate()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear() + 543;
+        return `${d}/${m}/${y}`;
+      }
+      return flatpickr.formatDate(date, format);
+    },
+    parseDate: function(dateStr, format) {
+      if (typeof dateStr === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr.trim())) {
+        const parts = dateStr.trim().split('/');
+        let y = parseInt(parts[2], 10);
+        if (y > 2400) y -= 543;
+        return new Date(y, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      }
+      return flatpickr.parseDate(dateStr, format);
+    },
+    onReady: function(selectedDates, dateStr, instance) {
+      updateCalendarThaiYear(instance);
+      if (instance.currentYearElement) {
+        instance.currentYearElement.addEventListener('input', function(e) {
+          const inputVal = parseInt(e.target.value, 10);
+          if (!isNaN(inputVal) && inputVal > 2400) {
+            instance.currentYear = inputVal - 543;
+            instance.redraw();
+            updateCalendarThaiYear(instance);
+          }
+        });
+      }
+    },
+    onOpen: function(selectedDates, dateStr, instance) {
+      updateCalendarThaiYear(instance);
+    },
+    onMonthChange: function(selectedDates, dateStr, instance) {
+      setTimeout(() => updateCalendarThaiYear(instance), 0);
+    },
+    onYearChange: function(selectedDates, dateStr, instance) {
+      setTimeout(() => updateCalendarThaiYear(instance), 0);
+    }
+  });
 }
 
 function openBorrowModalSingle(equipId) {
@@ -1269,6 +1319,7 @@ function openBorrowModalFromCart() {
 
   prefillBorrowRoomFromCart();
   if (modal) modal.classList.remove('hidden');
+  initFlatpickr();
   requestAnimationFrame(() => {
     resizeSignatureCanvasForDisplay();
     clearSignature();
