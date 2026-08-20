@@ -84,7 +84,7 @@ async function apiRequest(action, payload = {}, options = {}) {
   const apiUrl = resolveApiUrl();
   const isPost = options.method === 'POST' || [
     'verifyAdminPin', 'saveUser', 'updateUser', 'deleteUser',
-    'saveBorrowRequest', 'returnEquipment', 'approveBorrowRequest',
+    'saveBorrowRequest', 'returnEquipment', 'returnAllEquipment', 'approveBorrowRequest',
     'rejectBorrowRequest', 'saveEquipment', 'deleteEquipment', 'saveContactForm',
     'getUsers', 'getReportData', 'logoutAdmin'
   ].includes(action);
@@ -1885,6 +1885,73 @@ function changeAdminEquipPage(dir) {
   renderAdminEquipmentTable();
 }
 
+function groupTransactionsByTicket(transactions) {
+  const groupsMap = new Map();
+  transactions.forEach(t => {
+    const key = t.transId || ('single_' + Math.random());
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, {
+        transId: t.transId || '-',
+        borrowerName: t.borrowerName || '-',
+        email: t.email || '',
+        phone: t.phone || '',
+        borrowRoom: t.borrowRoom || '',
+        dateBorrow: t.dateBorrow || '-',
+        dateReturn: t.dateReturn || '-',
+        signatureUrl: t.signatureUrl || '',
+        reason: t.reason || '',
+        items: []
+      });
+    }
+    groupsMap.get(key).items.push(t);
+  });
+  return Array.from(groupsMap.values());
+}
+
+function getGroupStatusInfo(items) {
+  const hasPending = items.some(it => it.status === 'รออนุมัติ');
+  const hasBorrowing = items.some(it => it.status === 'กำลังยืม');
+  const hasReturned = items.some(it => it.status === 'คืนแล้ว');
+  const hasRejected = items.some(it => it.status === 'ไม่อนุมัติ');
+
+  if (hasPending) {
+    return { label: 'รออนุมัติ', badgeClass: 'status-pending', state: 'pending' };
+  }
+  if (hasBorrowing && hasReturned) {
+    return { label: 'กำลังยืม (คืนบางส่วน)', badgeClass: 'status-borrowed', state: 'borrowing_partial' };
+  }
+  if (hasBorrowing) {
+    return { label: 'กำลังยืม', badgeClass: 'status-borrowed', state: 'borrowing' };
+  }
+  if (hasReturned && !hasRejected) {
+    return { label: 'คืนแล้ว', badgeClass: 'status-returned', state: 'returned' };
+  }
+  if (hasRejected && !hasReturned) {
+    return { label: 'ไม่อนุมัติ', badgeClass: 'status-rejected', state: 'rejected' };
+  }
+  return { label: 'เสร็จสิ้น', badgeClass: 'status-returned', state: 'done' };
+}
+
+function toggleTransDetails(transId) {
+  const detailRow = document.getElementById(`trans-details-${transId}`);
+  const textIcon = document.getElementById(`toggle-text-icon-${transId}`);
+  if (!detailRow) return;
+  const isHidden = detailRow.classList.contains('hidden');
+  if (isHidden) {
+    detailRow.classList.remove('hidden');
+    if (textIcon) {
+      textIcon.classList.remove('fa-chevron-down');
+      textIcon.classList.add('fa-chevron-up');
+    }
+  } else {
+    detailRow.classList.add('hidden');
+    if (textIcon) {
+      textIcon.classList.remove('fa-chevron-up');
+      textIcon.classList.add('fa-chevron-down');
+    }
+  }
+}
+
 function renderAdminTransactionsTable() {
   const tbody = document.getElementById('admin-trans-tbody');
   const search = (document.getElementById('admin-trans-search')?.value || '').toLowerCase().trim();
@@ -1892,12 +1959,17 @@ function renderAdminTransactionsTable() {
 
   if (!tbody) return;
 
-  const filtered = transactionData.filter(t => {
+  const allGroups = groupTransactionsByTicket(transactionData);
+  const filtered = allGroups.filter(g => {
     const matchSearch = !search ||
-      (t.borrowerName || '').toLowerCase().includes(search) ||
-      (t.equipName || '').toLowerCase().includes(search) ||
-      (t.transId || '').toLowerCase().includes(search);
-    const matchStatus = showAll || t.status === 'รออนุมัติ' || t.status === 'กำลังยืม';
+      (g.borrowerName || '').toLowerCase().includes(search) ||
+      (g.email || '').toLowerCase().includes(search) ||
+      (g.transId || '').toLowerCase().includes(search) ||
+      (g.borrowRoom || '').toLowerCase().includes(search) ||
+      g.items.some(it => (it.equipName || '').toLowerCase().includes(search) || (it.equipId || '').toLowerCase().includes(search));
+
+    const statusInfo = getGroupStatusInfo(g.items);
+    const matchStatus = showAll || statusInfo.state === 'pending' || statusInfo.state === 'borrowing' || statusInfo.state === 'borrowing_partial';
     return matchSearch && matchStatus;
   });
 
@@ -1905,40 +1977,119 @@ function renderAdminTransactionsTable() {
   const startIndex = (adminTransCurrentPage - 1) * ITEMS_PER_PAGE;
   const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  tbody.innerHTML = pageItems.map(t => {
-    const sigCell = t.signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(t.transId)}" data-borrower="${escapeHtml(t.borrowerName)}" data-date="${escapeHtml(t.dateBorrow)}" data-sig-url="${escapeHtml(t.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(t.signatureUrl)}" alt="ลายเซ็น"></button>`
+  if (pageItems.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-8 text-gray-500">
+          <i class="fas fa-inbox text-3xl mb-2 text-gray-300"></i>
+          <p>ไม่พบรายการยืม-คืนอุปกรณ์</p>
+        </td>
+      </tr>
+    `;
+    document.getElementById('admin-trans-current-page').textContent = 1;
+    document.getElementById('admin-trans-total-pages').textContent = 1;
+    document.getElementById('btn-admin-trans-prev').disabled = true;
+    document.getElementById('btn-admin-trans-next').disabled = true;
+    return;
+  }
+
+  tbody.innerHTML = pageItems.map(g => {
+    const statusInfo = getGroupStatusInfo(g.items);
+    const totalQty = g.items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
+    const sigCell = g.signatureUrl
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(g.transId)}" data-borrower="${escapeHtml(g.borrowerName)}" data-date="${escapeHtml(g.dateBorrow)}" data-sig-url="${escapeHtml(g.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(g.signatureUrl)}" alt="ลายเซ็น"></button>`
       : '-';
 
+    let equipDisplay = '';
+    if (g.items.length === 1) {
+      equipDisplay = `<div class="font-semibold text-gray-800">${escapeHtml(g.items[0].equipName)}</div>`;
+    } else {
+      const firstFew = g.items.slice(0, 2).map(it => escapeHtml(it.equipName)).join(', ');
+      const moreCount = g.items.length - 2;
+      equipDisplay = `
+        <div>
+          <div class="font-semibold text-gray-800">${firstFew}${moreCount > 0 ? ` และอีก ${moreCount} รายการ` : ''}</div>
+          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold mt-1 inline-flex items-center gap-1">
+            <span>รวม ${g.items.length} รายการ</span> <i class="fas fa-chevron-down text-[10px]" id="toggle-text-icon-${escapeHtml(g.transId)}"></i>
+          </button>
+        </div>
+      `;
+    }
+
     let actionBtns = '';
-    if (t.status === 'รออนุมัติ') {
+    if (statusInfo.state === 'pending') {
       actionBtns = `
         <div class="table-action-btns">
-          <button onclick="approveBorrowConfirm('${t.transId}')" class="btn-approve"><i class="fas fa-check"></i> อนุมัติ</button>
-          <button onclick="rejectBorrowConfirm('${t.transId}')" class="btn-reject"><i class="fas fa-times"></i> ปฏิเสธ</button>
+          <button onclick="approveBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="อนุมัติทั้งคำขอ"><i class="fas fa-check"></i> อนุมัติ</button>
+          <button onclick="rejectBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-reject" title="ปฏิเสธทั้งคำขอ"><i class="fas fa-times"></i> ปฏิเสธ</button>
         </div>`;
-    } else if (t.status === 'กำลังยืม') {
+    } else if (statusInfo.state === 'borrowing' || statusInfo.state === 'borrowing_partial') {
       actionBtns = `
         <div class="table-action-btns">
-          <button onclick="returnEquipmentConfirm('${t.transId}', '${t.equipId}', ${t.qty})" class="btn-approve"><i class="fas fa-undo"></i> คืนอุปกรณ์</button>
+          <button onclick="returnAllEquipmentConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="คืนอุปกรณ์ทั้งหมดในคำขอนี้"><i class="fas fa-undo"></i> คืนทั้งหมด</button>
+          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details" title="ดู/คืนแยกชิ้น"><i class="fas fa-list"></i> รายการ (${g.items.length})</button>
         </div>`;
     } else {
-      actionBtns = `<span class="text-xs text-gray-400">เสร็จสิ้น</span>`;
+      actionBtns = `
+        <div class="table-action-btns">
+          <span class="text-xs text-gray-400">เสร็จสิ้น</span>
+          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details" title="ดูรายละเอียด"><i class="fas fa-eye"></i> ดู (${g.items.length})</button>
+        </div>`;
     }
 
     return `
       <tr class="table-row">
         <td class="px-6 py-4">
-          <p class="font-bold text-gray-800">${escapeHtml(t.borrowerName)}</p>
-          <p class="text-xs text-gray-500">${escapeHtml(t.email)}</p>
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold border border-slate-200">${escapeHtml(g.transId)}</span>
+          </div>
+          <p class="font-bold text-gray-800">${escapeHtml(g.borrowerName)}</p>
+          <p class="text-xs text-gray-500">${escapeHtml(g.email)}</p>
         </td>
-        <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(t.equipName)}</td>
-        <td class="px-6 py-4 text-center font-bold">${t.qty}</td>
-        <td class="px-6 py-4">${escapeHtml(t.dateBorrow)}</td>
-        <td class="px-6 py-4">${escapeHtml(t.dateReturn)}</td>
+        <td class="px-6 py-4">${equipDisplay}</td>
+        <td class="px-6 py-4 text-center font-bold text-gray-800">${totalQty}</td>
+        <td class="px-6 py-4 text-gray-700">${escapeHtml(g.dateBorrow)}</td>
+        <td class="px-6 py-4 text-gray-700">${escapeHtml(g.dateReturn)}</td>
         <td class="px-6 py-4 text-center">${sigCell}</td>
-        <td class="px-6 py-4"><span class="status-badge ${t.status === 'กำลังยืม' ? 'status-borrowed' : t.status === 'คืนแล้ว' ? 'status-returned' : t.status === 'รออนุมัติ' ? 'status-pending' : 'status-rejected'}">${escapeHtml(t.status)}</span></td>
+        <td class="px-6 py-4"><span class="status-badge ${statusInfo.badgeClass}">${escapeHtml(statusInfo.label)}</span></td>
         <td class="px-6 py-4 text-center">${actionBtns}</td>
+      </tr>
+      <tr id="trans-details-${escapeHtml(g.transId)}" class="hidden bg-slate-50 border-y border-slate-200">
+        <td colspan="8" class="px-6 py-4">
+          <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5 text-xs text-gray-600">
+              <div><strong class="text-gray-700">ห้องที่ใช้:</strong> ${escapeHtml(g.borrowRoom || '-')}</div>
+              <div><strong class="text-gray-700">เบอร์โทรศัพท์:</strong> ${escapeHtml(g.phone || '-')}</div>
+              <div><strong class="text-gray-700">เหตุผลการยืม:</strong> ${escapeHtml(g.reason || '-')}</div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                รายการอุปกรณ์ในคำขอนี้ (${g.items.length} รายการ):
+              </div>
+              <div class="grid grid-cols-1 gap-2">
+                ${g.items.map((item, idx) => `
+                  <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div class="flex items-center gap-3">
+                      <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center font-bold">${idx + 1}</span>
+                      <div>
+                        <div class="font-semibold text-gray-800 text-sm">${escapeHtml(item.equipName)}</div>
+                        <div class="text-xs text-gray-500">รหัสอุปกรณ์: <span class="font-mono">${escapeHtml(item.equipId)}</span> | จำนวน: <strong>${item.qty}</strong> ชิ้น</div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="status-badge ${item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : item.status === 'รออนุมัติ' ? 'status-pending' : 'status-rejected'}">${escapeHtml(item.status)}</span>
+                      ${item.status === 'กำลังยืม' ? `
+                        <button onclick="returnEquipmentConfirm('${escapeHtml(item.transId)}', '${escapeHtml(item.equipId)}', ${item.qty})" class="btn-approve text-xs py-1.5 px-3 min-h-[36px]" title="คืนเฉพาะอุปกรณ์ชิ้นนี้">
+                          <i class="fas fa-undo"></i> คืนชิ้นนี้
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
@@ -1955,12 +2106,23 @@ function changeAdminTransPage(dir) {
 }
 
 async function approveBorrowConfirm(transId) {
+  const groupItems = transactionData.filter(t => t.transId === transId && t.status === 'รออนุมัติ');
+  const borrowerName = groupItems[0]?.borrowerName || '';
+  const itemSummaryHtml = groupItems.map(it => `<li style="text-align:left;">• <strong>${escapeHtml(it.equipName)}</strong> (${it.qty} ชิ้น)</li>`).join('');
+
   const result = await Swal.fire({
     title: 'ยืนยันการอนุมัติ?',
-    text: `ต้องการอนุมัติคำขอยืมรหัส ${transId} หรือไม่`,
+    html: `
+      <div style="text-align:left; font-size:14px; margin-top:10px;">
+        <p><strong>รหัสคำขอ:</strong> ${escapeHtml(transId)}</p>
+        <p><strong>ผู้ยืม:</strong> ${escapeHtml(borrowerName)}</p>
+        <p style="margin-top:8px;"><strong>รายการอุปกรณ์ที่อนุมัติ (${groupItems.length} รายการ):</strong></p>
+        <ul style="padding-left:15px; margin-top:4px; color:#374151;">${itemSummaryHtml}</ul>
+      </div>
+    `,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'อนุมัติ',
+    confirmButtonText: 'อนุมัติทั้งคำขอ',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#059669'
   });
@@ -1985,13 +2147,24 @@ async function approveBorrowConfirm(transId) {
 }
 
 async function rejectBorrowConfirm(transId) {
+  const groupItems = transactionData.filter(t => t.transId === transId && t.status === 'รออนุมัติ');
+  const borrowerName = groupItems[0]?.borrowerName || '';
+  const itemSummaryHtml = groupItems.map(it => `<li style="text-align:left;">• <strong>${escapeHtml(it.equipName)}</strong> (${it.qty} ชิ้น)</li>`).join('');
+
   const { value: reason } = await Swal.fire({
     title: 'ปฏิเสธคำขอยืม',
+    html: `
+      <div style="text-align:left; font-size:14px; margin-bottom:12px;">
+        <p><strong>รหัสคำขอ:</strong> ${escapeHtml(transId)}</p>
+        <p><strong>ผู้ยืม:</strong> ${escapeHtml(borrowerName)}</p>
+        <ul style="padding-left:15px; margin-top:4px; color:#374151;">${itemSummaryHtml}</ul>
+      </div>
+    `,
     input: 'text',
     inputLabel: 'เหตุผลการไม่อนุมัติ',
     inputPlaceholder: 'กรอกเหตุผล...',
     showCancelButton: true,
-    confirmButtonText: 'ยืนยันปฏิเสธ',
+    confirmButtonText: 'ยืนยันปฏิเสธทั้งคำขอ',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#dc2626'
   });
@@ -2015,13 +2188,55 @@ async function rejectBorrowConfirm(transId) {
   }
 }
 
-async function returnEquipmentConfirm(transId, equipId, qty) {
+async function returnAllEquipmentConfirm(transId) {
+  const groupItems = transactionData.filter(t => t.transId === transId && t.status === 'กำลังยืม');
+  const borrowerName = groupItems[0]?.borrowerName || '';
+  const itemSummaryHtml = groupItems.map(it => `<li style="text-align:left;">• <strong>${escapeHtml(it.equipName)}</strong> (${it.qty} ชิ้น)</li>`).join('');
+
   const result = await Swal.fire({
-    title: 'ยืนยันการคืนอุปกรณ์?',
-    text: `รับคืนอุปกรณ์สำหรับธุรกรรม ${transId}`,
+    title: 'ยืนยันคืนอุปกรณ์ทั้งหมด?',
+    html: `
+      <div style="text-align:left; font-size:14px; margin-top:10px;">
+        <p><strong>รหัสคำขอ:</strong> ${escapeHtml(transId)}</p>
+        <p><strong>ผู้ยืม:</strong> ${escapeHtml(borrowerName)}</p>
+        <p style="margin-top:8px;"><strong>รายการที่จะรับคืน (${groupItems.length} รายการ):</strong></p>
+        <ul style="padding-left:15px; margin-top:4px; color:#374151;">${itemSummaryHtml}</ul>
+      </div>
+    `,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'รับคืน',
+    confirmButtonText: 'รับคืนทั้งหมด',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#059669'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      Swal.showLoading();
+      await apiRequest('returnAllEquipment', { transId });
+      Swal.fire({ icon: 'success', title: 'รับคืนอุปกรณ์ทั้งหมดเรียบร้อยแล้ว', timer: 1200, showConfirmButton: false });
+      loadData();
+    } catch (err) {
+      Swal.fire('รับคืนไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาดในการรับคืน', 'error');
+    }
+  }
+}
+
+async function returnEquipmentConfirm(transId, equipId, qty) {
+  const targetItem = transactionData.find(t => t.transId === transId && t.equipId === equipId);
+  const equipName = targetItem?.equipName || equipId;
+  const result = await Swal.fire({
+    title: 'ยืนยันการคืนอุปกรณ์?',
+    html: `
+      <div style="text-align:left; font-size:14px; margin-top:10px;">
+        <p><strong>รหัสคำขอ:</strong> ${escapeHtml(transId)}</p>
+        <p><strong>อุปกรณ์:</strong> ${escapeHtml(equipName)}</p>
+        <p><strong>จำนวน:</strong> ${qty} ชิ้น</p>
+      </div>
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'รับคืนชิ้นนี้',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#0284c7'
   });
