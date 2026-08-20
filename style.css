@@ -145,7 +145,7 @@ body {
 }
 
 .transaction-detail-item + .transaction-detail-item {
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--color-rule);
 }
 
 @media (max-width: 768px) {
@@ -168,7 +168,9 @@ body {
     padding-right: 12px;
     padding-top: 12px;
   }
+}
 
+@media (max-width: 1024px) {
   #admin-transactions .admin-table-scroll {
     overflow: visible;
   }
@@ -195,7 +197,7 @@ body {
   #admin-transactions .table-row {
     display: block;
     margin-bottom: 12px;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--color-rule);
     border-radius: 12px;
     overflow: hidden;
     background: var(--surface-card);
@@ -207,7 +209,7 @@ body {
     align-items: start;
     gap: 12px;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--color-rule);
     text-align: left;
   }
 
@@ -251,7 +253,7 @@ body {
   #admin-transactions .transaction-details-row {
     display: block;
     margin: -4px 0 12px;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--color-rule);
     border-radius: 12px;
     background: var(--surface-subtle);
   }
@@ -891,7 +893,7 @@ body {
 }
 
 .btn-approve {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
   color: #ffffff !important;
   border: 1px solid #047857 !important;
   border-radius: 8px !important;
@@ -911,13 +913,13 @@ body {
 }
 
 .btn-approve:hover {
-  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%) !important;
   box-shadow: 0 5px 14px rgba(16, 185, 129, 0.6) !important;
   transform: translateY(-1px) !important;
 }
 
 .btn-reject {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
   color: #ffffff !important;
   border: 1px solid #b91c1c !important;
   border-radius: 8px !important;
@@ -937,7 +939,7 @@ body {
 }
 
 .btn-reject:hover {
-  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
+  background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%) !important;
   box-shadow: 0 5px 14px rgba(239, 68, 68, 0.6) !important;
   transform: translateY(-1px) !important;
 }

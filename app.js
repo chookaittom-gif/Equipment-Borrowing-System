@@ -2069,7 +2069,7 @@ function renderAdminTransactionsTable() {
                       <span class="status-badge ${item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : item.status === 'รออนุมัติ' ? 'status-pending' : 'status-rejected'}">${escapeHtml(item.status)}</span>
                       ${item.status === 'กำลังยืม' ? `
                         <button type="button" onclick="returnEquipmentConfirm('${escapeHtml(item.transId)}', '${escapeHtml(item.equipId)}', ${item.qty})" class="btn-approve text-xs py-1.5 px-3 min-h-[36px]" title="คืนเฉพาะอุปกรณ์ชิ้นนี้">
-                          <i class="fas fa-undo" aria-hidden="true"></i> คืนชิ้นนี้
+                          <i class="fas fa-undo" aria-hidden="true"></i> คืนอุปกรณ์ชิ้นนี้
                         </button>
                       ` : ''}
                     </div>
@@ -2225,7 +2225,7 @@ async function returnEquipmentConfirm(transId, equipId, qty) {
     `,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'รับคืนชิ้นนี้',
+    confirmButtonText: 'รับคืนอุปกรณ์ชิ้นนี้',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#0284c7'
   });
