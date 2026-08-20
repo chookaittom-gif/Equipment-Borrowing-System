@@ -134,6 +134,20 @@ body {
   min-width: 900px;
 }
 
+.transaction-filter-toggle:focus-visible + .transaction-filter-toggle-track,
+.transaction-details-toggle:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 3px;
+}
+
+.transaction-details-content {
+  padding: 4px 0;
+}
+
+.transaction-detail-item + .transaction-detail-item {
+  border-top: 1px solid var(--rule);
+}
+
 @media (max-width: 768px) {
   .admin-sidebar {
     width: min(82vw, var(--sidebar-width));
@@ -153,6 +167,116 @@ body {
     padding-left: 12px;
     padding-right: 12px;
     padding-top: 12px;
+  }
+
+  #admin-transactions .admin-table-scroll {
+    overflow: visible;
+  }
+
+  #admin-transactions .admin-table-scroll > table,
+  #admin-transactions .admin-table-scroll > table tbody {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  #admin-transactions .admin-table-scroll > table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #admin-transactions .table-row {
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-card);
+  }
+
+  #admin-transactions .table-row > td {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 42%) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+  }
+
+  #admin-transactions .table-row > td::before {
+    content: attr(data-label);
+    color: var(--olive-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  #admin-transactions .table-row > td:last-child {
+    border-bottom: 0;
+  }
+
+  #admin-transactions .table-row > td[data-label="ผู้ยืม"] {
+    display: block;
+  }
+
+  #admin-transactions .table-row > td[data-label="ผู้ยืม"]::before {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  #admin-transactions .table-row > td[data-label="ลายเซ็นผู้ยืม"] .signature-button {
+    margin: 0;
+  }
+
+  #admin-transactions .table-row > td[data-label="จัดการ"] .table-action-btns {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  #admin-transactions .table-row > td[data-label="จัดการ"] .btn-approve,
+  #admin-transactions .table-row > td[data-label="จัดการ"] .btn-details,
+  #admin-transactions .table-row > td[data-label="จัดการ"] .btn-reject {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  #admin-transactions .transaction-details-row {
+    display: block;
+    margin: -4px 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface-subtle);
+  }
+
+  #admin-transactions .transaction-details-row.hidden {
+    display: none;
+  }
+
+  #admin-transactions .transaction-details-row > td {
+    display: block;
+    padding: 16px;
+  }
+
+  #admin-transactions .transaction-detail-item {
+    align-items: flex-start;
+  }
+
+  #admin-transactions .transaction-detail-item > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #admin-transactions .pagination-container {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 

@@ -387,36 +387,38 @@
           <div class="bg-white p-6 rounded-xl shadow-lg">
             <div class="mb-4 flex flex-col md:flex-row gap-4">
               <div class="relative flex-1">
-                <input type="text" id="admin-trans-search" onkeyup="renderAdminTransactionsTable()" placeholder="ค้นหารายการ..." class="form-input pl-12">
-                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <label class="sr-only" for="admin-trans-search">ค้นหารายการยืม-คืน</label>
+                <input type="text" id="admin-trans-search" onkeyup="renderAdminTransactionsTable()" placeholder="ค้นหาผู้ยืม, รหัสคำขอ, อุปกรณ์, ห้อง หรืออีเมล" class="form-input pl-12">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
               </div>
               <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="admin-show-all" onchange="renderAdminTransactionsTable()" class="sr-only peer">
-                <div class="relative w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer toggle-checkbox peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                <span class="ml-3 text-sm font-medium text-gray-700">แสดงทั้งหมด</span>
+                <input type="checkbox" id="admin-show-all" onchange="renderAdminTransactionsTable()" class="sr-only peer transaction-filter-toggle">
+                <div class="relative w-12 h-6 bg-gray-300 rounded-full peer toggle-checkbox peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all transaction-filter-toggle-track" aria-hidden="true"></div>
+                <span class="ml-3 text-sm font-medium text-gray-700">รวมรายการที่เสร็จสิ้นแล้ว</span>
               </label>
             </div>
             <div class="admin-table-scroll">
               <table class="w-full text-sm text-left">
+                <caption class="sr-only">รายการคำขอยืม-คืนอุปกรณ์</caption>
                 <thead class="table-header">
                   <tr>
-                    <th class="px-6 py-4">ผู้ยืม</th>
-                    <th class="px-6 py-4">อุปกรณ์</th>
-                    <th class="px-6 py-4 text-center">จำนวน</th>
-                    <th class="px-6 py-4">วันที่ยืม</th>
-                    <th class="px-6 py-4">กำหนดคืน</th>
-                    <th class="px-6 py-4 text-center">ลายเซ็น</th>
-                    <th class="px-6 py-4">สถานะ</th>
-                    <th class="px-6 py-4 text-center">จัดการ</th>
+                    <th scope="col" class="px-6 py-4">ผู้ยืม</th>
+                    <th scope="col" class="px-6 py-4">อุปกรณ์</th>
+                    <th scope="col" class="px-6 py-4 text-center">จำนวน (ชิ้น)</th>
+                    <th scope="col" class="px-6 py-4">วันที่ยืม</th>
+                    <th scope="col" class="px-6 py-4">กำหนดคืน</th>
+                    <th scope="col" class="px-6 py-4 text-center">ลายเซ็นผู้ยืม</th>
+                    <th scope="col" class="px-6 py-4">สถานะ</th>
+                    <th scope="col" class="px-6 py-4 text-center">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="admin-trans-tbody" class="divide-y divide-gray-100"></tbody>
               </table>
             </div>
             <div class="pagination-container no-print mt-4">
-              <button class="pagination-btn" id="btn-admin-trans-prev" onclick="changeAdminTransPage(-1)"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+              <button class="pagination-btn" id="btn-admin-trans-prev" onclick="changeAdminTransPage(-1)" aria-label="หน้าก่อนหน้า"><i class="fas fa-chevron-left" aria-hidden="true"></i> ก่อนหน้า</button>
               <span class="pagination-info">หน้า <span id="admin-trans-current-page">1</span> จาก <span id="admin-trans-total-pages">1</span></span>
-              <button class="pagination-btn" id="btn-admin-trans-next" onclick="changeAdminTransPage(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+              <button class="pagination-btn" id="btn-admin-trans-next" onclick="changeAdminTransPage(1)" aria-label="หน้าถัดไป">ถัดไป <i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
           </div>
         </div>

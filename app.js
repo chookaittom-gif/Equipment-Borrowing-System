@@ -1934,22 +1934,14 @@ function getGroupStatusInfo(items) {
 
 function toggleTransDetails(transId) {
   const detailRow = document.getElementById(`trans-details-${transId}`);
-  const textIcon = document.getElementById(`toggle-text-icon-${transId}`);
   if (!detailRow) return;
   const isHidden = detailRow.classList.contains('hidden');
-  if (isHidden) {
-    detailRow.classList.remove('hidden');
-    if (textIcon) {
-      textIcon.classList.remove('fa-chevron-down');
-      textIcon.classList.add('fa-chevron-up');
+  detailRow.classList.toggle('hidden', !isHidden);
+  document.querySelectorAll('.transaction-details-toggle').forEach(button => {
+    if (button.dataset.transId === String(transId)) {
+      button.setAttribute('aria-expanded', String(isHidden));
     }
-  } else {
-    detailRow.classList.add('hidden');
-    if (textIcon) {
-      textIcon.classList.remove('fa-chevron-up');
-      textIcon.classList.add('fa-chevron-down');
-    }
-  }
+  });
 }
 
 function renderAdminTransactionsTable() {
@@ -2009,9 +2001,7 @@ function renderAdminTransactionsTable() {
       equipDisplay = `
         <div>
           <div class="font-semibold text-gray-800">${firstFew}${moreCount > 0 ? ` และอีก ${moreCount} รายการ` : ''}</div>
-          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold mt-1 inline-flex items-center gap-1">
-            <span>รวม ${g.items.length} รายการ</span> <i class="fas fa-chevron-down text-[10px]" id="toggle-text-icon-${escapeHtml(g.transId)}"></i>
-          </button>
+          <span class="text-xs text-gray-500 mt-1 block">รวม ${g.items.length} รายการอุปกรณ์</span>
         </div>
       `;
     }
@@ -2020,55 +2010,54 @@ function renderAdminTransactionsTable() {
     if (statusInfo.state === 'pending') {
       actionBtns = `
         <div class="table-action-btns">
-          <button onclick="approveBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="อนุมัติทั้งคำขอ"><i class="fas fa-check"></i> อนุมัติ</button>
-          <button onclick="rejectBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-reject" title="ปฏิเสธทั้งคำขอ"><i class="fas fa-times"></i> ปฏิเสธ</button>
+          <button type="button" onclick="approveBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="อนุมัติทั้งคำขอ"><i class="fas fa-check" aria-hidden="true"></i> อนุมัติ</button>
+          <button type="button" onclick="rejectBorrowConfirm('${escapeHtml(g.transId)}')" class="btn-reject" title="ปฏิเสธทั้งคำขอ"><i class="fas fa-times" aria-hidden="true"></i> ปฏิเสธ</button>
         </div>`;
     } else if (statusInfo.state === 'borrowing' || statusInfo.state === 'borrowing_partial') {
       actionBtns = `
         <div class="table-action-btns">
-          <button onclick="returnAllEquipmentConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="คืนอุปกรณ์ทั้งหมดในคำขอนี้"><i class="fas fa-undo"></i> คืนทั้งหมด</button>
-          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details" title="ดู/คืนแยกชิ้น"><i class="fas fa-list"></i> รายการ (${g.items.length})</button>
+          <button type="button" onclick="returnAllEquipmentConfirm('${escapeHtml(g.transId)}')" class="btn-approve" title="คืนอุปกรณ์ทั้งหมดในคำขอนี้"><i class="fas fa-undo" aria-hidden="true"></i> คืนอุปกรณ์ทั้งหมด</button>
+          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details transaction-details-toggle" data-trans-id="${escapeHtml(g.transId)}" aria-controls="trans-details-${escapeHtml(g.transId)}" aria-expanded="false" title="ดูหรือคืนอุปกรณ์แยกชิ้น"><i class="fas fa-list" aria-hidden="true"></i> ดู/คืนแยกชิ้น (${g.items.length} รายการ)</button>
         </div>`;
     } else {
       actionBtns = `
         <div class="table-action-btns">
-          <span class="text-xs text-gray-400">เสร็จสิ้น</span>
-          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details" title="ดูรายละเอียด"><i class="fas fa-eye"></i> ดู (${g.items.length})</button>
+          <button type="button" onclick="toggleTransDetails('${escapeHtml(g.transId)}')" class="btn-details transaction-details-toggle" data-trans-id="${escapeHtml(g.transId)}" aria-controls="trans-details-${escapeHtml(g.transId)}" aria-expanded="false" title="ดูรายละเอียดคำขอ"><i class="fas fa-eye" aria-hidden="true"></i> ดูรายละเอียด (${g.items.length} รายการ)</button>
         </div>`;
     }
 
     return `
       <tr class="table-row">
-        <td class="px-6 py-4">
+        <td class="px-6 py-4" data-label="ผู้ยืม">
           <div class="flex items-center gap-1.5 mb-1">
             <span class="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold border border-slate-200">${escapeHtml(g.transId)}</span>
           </div>
           <p class="font-bold text-gray-800">${escapeHtml(g.borrowerName)}</p>
           <p class="text-xs text-gray-500">${escapeHtml(g.email)}</p>
         </td>
-        <td class="px-6 py-4">${equipDisplay}</td>
-        <td class="px-6 py-4 text-center font-bold text-gray-800">${totalQty}</td>
-        <td class="px-6 py-4 text-gray-700">${escapeHtml(g.dateBorrow)}</td>
-        <td class="px-6 py-4 text-gray-700">${escapeHtml(g.dateReturn)}</td>
-        <td class="px-6 py-4 text-center">${sigCell}</td>
-        <td class="px-6 py-4"><span class="status-badge ${statusInfo.badgeClass}">${escapeHtml(statusInfo.label)}</span></td>
-        <td class="px-6 py-4 text-center">${actionBtns}</td>
+        <td class="px-6 py-4" data-label="อุปกรณ์">${equipDisplay}</td>
+        <td class="px-6 py-4 text-center font-bold text-gray-800" data-label="จำนวน (ชิ้น)">${totalQty}</td>
+        <td class="px-6 py-4 text-gray-700" data-label="วันที่ยืม">${escapeHtml(g.dateBorrow)}</td>
+        <td class="px-6 py-4 text-gray-700" data-label="กำหนดคืน">${escapeHtml(g.dateReturn)}</td>
+        <td class="px-6 py-4 text-center" data-label="ลายเซ็นผู้ยืม">${sigCell}</td>
+        <td class="px-6 py-4" data-label="สถานะ"><span class="status-badge ${statusInfo.badgeClass}">${escapeHtml(statusInfo.label)}</span></td>
+        <td class="px-6 py-4 text-center" data-label="จัดการ">${actionBtns}</td>
       </tr>
-      <tr id="trans-details-${escapeHtml(g.transId)}" class="hidden bg-slate-50 border-y border-slate-200">
+      <tr id="trans-details-${escapeHtml(g.transId)}" class="transaction-details-row hidden bg-slate-50 border-y border-slate-200">
         <td colspan="8" class="px-6 py-4">
-          <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+          <div class="transaction-details-content space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5 text-xs text-gray-600">
               <div><strong class="text-gray-700">ห้องที่ใช้:</strong> ${escapeHtml(g.borrowRoom || '-')}</div>
               <div><strong class="text-gray-700">เบอร์โทรศัพท์:</strong> ${escapeHtml(g.phone || '-')}</div>
               <div><strong class="text-gray-700">เหตุผลการยืม:</strong> ${escapeHtml(g.reason || '-')}</div>
             </div>
             <div class="space-y-2">
-              <div class="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              <div class="text-xs font-bold text-gray-700">
                 รายการอุปกรณ์ในคำขอนี้ (${g.items.length} รายการ):
               </div>
               <div class="grid grid-cols-1 gap-2">
                 ${g.items.map((item, idx) => `
-                  <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div class="transaction-detail-item flex flex-wrap items-center justify-between gap-2 py-3">
                     <div class="flex items-center gap-3">
                       <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center font-bold">${idx + 1}</span>
                       <div>
@@ -2079,8 +2068,8 @@ function renderAdminTransactionsTable() {
                     <div class="flex items-center gap-3">
                       <span class="status-badge ${item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : item.status === 'รออนุมัติ' ? 'status-pending' : 'status-rejected'}">${escapeHtml(item.status)}</span>
                       ${item.status === 'กำลังยืม' ? `
-                        <button onclick="returnEquipmentConfirm('${escapeHtml(item.transId)}', '${escapeHtml(item.equipId)}', ${item.qty})" class="btn-approve text-xs py-1.5 px-3 min-h-[36px]" title="คืนเฉพาะอุปกรณ์ชิ้นนี้">
-                          <i class="fas fa-undo"></i> คืนชิ้นนี้
+                        <button type="button" onclick="returnEquipmentConfirm('${escapeHtml(item.transId)}', '${escapeHtml(item.equipId)}', ${item.qty})" class="btn-approve text-xs py-1.5 px-3 min-h-[36px]" title="คืนเฉพาะอุปกรณ์ชิ้นนี้">
+                          <i class="fas fa-undo" aria-hidden="true"></i> คืนชิ้นนี้
                         </button>
                       ` : ''}
                     </div>
