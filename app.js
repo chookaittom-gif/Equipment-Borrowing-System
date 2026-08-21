@@ -3063,11 +3063,15 @@ function renderReportContent(report) {
   document.getElementById('reportTitle').textContent = report.title;
   document.getElementById('generatedAt').textContent = 'วันที่พิมพ์: ' + report.generatedAt;
 
-  if (report.logoUrl) {
-    const logo = document.getElementById('logo');
-    logo.onerror = () => document.getElementById('logoFrame').hidden = true;
-    logo.src = report.logoUrl;
-    document.getElementById('logoFrame').hidden = false;
+  const logoFrame = document.getElementById('logoFrame');
+  const logo = document.getElementById('logo');
+  if (logo && logoFrame) {
+    logo.onerror = () => {
+      logo.onerror = null;
+      logo.src = './loan-return-equipment-logo.png';
+    };
+    logo.src = './loan-return-equipment-logo.png';
+    logoFrame.hidden = false;
   }
 
   const transactions = report.transactions || [];
