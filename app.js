@@ -3068,9 +3068,9 @@ function renderReportContent(report) {
   if (logo && logoFrame) {
     logo.onerror = () => {
       logo.onerror = null;
-      logo.src = './loan-return-equipment-fix.png';
+      logo.src = './loan-return-equipment-icon-3d-with-text.png';
     };
-    logo.src = './loan-return-equipment-fix.png';
+    logo.src = './loan-return-equipment-icon-3d-with-text.png';
     logoFrame.hidden = false;
   }
 
