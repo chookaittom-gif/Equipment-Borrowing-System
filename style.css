@@ -172,14 +172,14 @@ body {
 
 @media (max-width: 1024px) {
   #admin-transactions .admin-table-scroll {
-    overflow: visible;
+    overflow-x: visible;
   }
 
   #admin-transactions .admin-table-scroll > table,
   #admin-transactions .admin-table-scroll > table tbody {
     display: block;
-    min-width: 0;
-    width: 100%;
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   #admin-transactions .admin-table-scroll > table thead {
@@ -205,10 +205,10 @@ body {
 
   #admin-transactions .table-row > td {
     display: grid;
-    grid-template-columns: minmax(7.5rem, 42%) minmax(0, 1fr);
+    grid-template-columns: minmax(7rem, 38%) minmax(0, 1fr);
     align-items: start;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--color-rule);
     text-align: left;
   }
@@ -238,9 +238,21 @@ body {
     margin: 0;
   }
 
+  #admin-transactions .table-row > td[data-label="จัดการ"] {
+    display: block;
+  }
+
+  #admin-transactions .table-row > td[data-label="จัดการ"]::before {
+    display: block;
+    margin-bottom: 8px;
+  }
+
   #admin-transactions .table-row > td[data-label="จัดการ"] .table-action-btns {
     width: 100%;
-    justify-content: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
   }
 
   #admin-transactions .table-row > td[data-label="จัดการ"] .btn-approve,
@@ -248,6 +260,12 @@ body {
   #admin-transactions .table-row > td[data-label="จัดการ"] .btn-reject {
     flex: 1 1 100%;
     width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
   }
 
   #admin-transactions .transaction-details-row {
@@ -264,16 +282,37 @@ body {
 
   #admin-transactions .transaction-details-row > td {
     display: block;
-    padding: 16px;
+    padding: 12px 14px;
   }
 
   #admin-transactions .transaction-detail-item {
-    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  #admin-transactions .transaction-detail-item > div:first-child {
+    width: 100%;
   }
 
   #admin-transactions .transaction-detail-item > div:last-child {
     width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
+    gap: 8px;
+  }
+
+  #admin-transactions .transaction-detail-item .btn-approve {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   #admin-transactions .pagination-container {
