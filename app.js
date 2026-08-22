@@ -1887,6 +1887,14 @@ function renderAdminDashboard() {
           </div>
         </div>
       `).join('')}
+    </div>
+    
+    <div class="mt-4 pt-3 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+      <span>แสดง ${recent.length} รายการล่าสุดจากทั้งหมด ${transactionData.length} รายการ</span>
+      <button type="button" onclick="showAdminSection('transactions', document.getElementById('menu-item-transactions'))" class="font-semibold text-sky-700 hover:text-sky-900 hover:underline flex items-center gap-1.5 min-h-[44px] py-2 px-3 rounded-lg hover:bg-sky-50 transition">
+        <span>ดูรายการทั้งหมดที่มีระบบเปลี่ยนหน้า</span>
+        <i class="fas fa-arrow-right text-xs"></i>
+      </button>
     </div>`;
 }
 
