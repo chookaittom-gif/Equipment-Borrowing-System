@@ -562,6 +562,7 @@ function switchTab(tabName) {
     if (isAdminMode) {
       document.getElementById('user-layout')?.classList.add('hidden-section');
       document.getElementById('admin-layout')?.classList.remove('hidden-section');
+      renderAdminDashboard();
     } else {
       openAdminLoginModal();
     }
@@ -1793,6 +1794,13 @@ function showAdminSection(sectionName, element) {
 // ==========================================
 // Admin Views Rendering
 // ==========================================
+function getAdminStatusBadgeClass(status) {
+  if (status === 'กำลังยืม') return 'status-borrowed';
+  if (status === 'คืนแล้ว') return 'status-returned';
+  if (status === 'ไม่อนุมัติ') return 'status-rejected';
+  return 'status-pending';
+}
+
 function renderAdminDashboard() {
   const total = equipmentData.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
   const available = equipmentData.reduce((sum, item) => sum + (Number(item.available) || 0), 0);
@@ -1800,22 +1808,28 @@ function renderAdminDashboard() {
   const todayKey = normalizeThaiDateKey(formatThaiDate(new Date()));
   const todayCount = transactionData.filter(t => normalizeThaiDateKey(t.dateBorrow) === todayKey).length;
 
-  document.getElementById('admin-stat-total').textContent = total;
-  document.getElementById('admin-stat-available').textContent = available;
-  document.getElementById('admin-stat-borrowed').textContent = borrowed;
-  document.getElementById('admin-stat-today').textContent = todayCount;
+  const elTotal = document.getElementById('admin-stat-total');
+  const elAvail = document.getElementById('admin-stat-available');
+  const elBorrowed = document.getElementById('admin-stat-borrowed');
+  const elToday = document.getElementById('admin-stat-today');
+
+  if (elTotal) elTotal.textContent = total;
+  if (elAvail) elAvail.textContent = available;
+  if (elBorrowed) elBorrowed.textContent = borrowed;
+  if (elToday) elToday.textContent = todayCount;
 
   const recent = transactionData.slice(0, 5);
   const container = document.getElementById('admin-recent-transactions');
   if (!container) return;
 
   if (recent.length === 0) {
-    container.innerHTML = '<p class="text-gray-500 py-4 text-center">ไม่มีรายการยืม-คืนล่าสุด</p>';
+    container.innerHTML = '<p class="text-gray-500 py-6 text-center text-sm">ไม่มีรายการยืม-คืนล่าสุด</p>';
     return;
   }
 
   container.innerHTML = `
-    <div class="admin-table-scroll overflow-x-auto">
+    <!-- Desktop Table View -->
+    <div class="hidden md:block admin-table-scroll overflow-x-auto">
       <table class="w-full text-sm text-left">
         <thead class="bg-gray-100 text-gray-700">
           <tr>
@@ -1827,15 +1841,32 @@ function renderAdminDashboard() {
         </thead>
         <tbody>
           ${recent.map(t => `
-            <tr class="border-b">
-              <td class="p-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(t.transId)}</td>
+            <tr class="border-b hover:bg-gray-50/80 transition-colors">
+              <td class="p-3 font-mono font-semibold whitespace-nowrap text-sky-800">${escapeHtml(t.transId)}</td>
               <td class="p-3">${escapeHtml(t.borrowerName)}</td>
-              <td class="p-3">${escapeHtml(t.equipName)}</td>
-              <td class="p-3 whitespace-nowrap"><span class="status-badge ${t.status === 'กำลังยืม' ? 'status-borrowed' : t.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending'}">${escapeHtml(t.status)}</span></td>
+              <td class="p-3 font-medium text-gray-800">${escapeHtml(t.equipName)}</td>
+              <td class="p-3 whitespace-nowrap"><span class="status-badge ${getAdminStatusBadgeClass(t.status)}">${escapeHtml(t.status)}</span></td>
             </tr>
           `).join('')}
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="block md:hidden space-y-3">
+      ${recent.map(t => `
+        <div class="recent-trans-mobile-card p-3.5 bg-slate-50/80 rounded-xl border border-gray-200/90 shadow-sm flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-xs font-bold text-sky-900 bg-sky-100/90 px-2 py-0.5 rounded border border-sky-200">${escapeHtml(t.transId)}</span>
+            <span class="status-badge ${getAdminStatusBadgeClass(t.status)} text-xs py-0.5 px-2.5">${escapeHtml(t.status)}</span>
+          </div>
+          <div class="text-sm font-semibold text-gray-800 leading-snug">${escapeHtml(t.equipName)}</div>
+          <div class="flex items-center justify-between text-xs text-gray-500 pt-1.5 border-t border-gray-200/60">
+            <span class="flex items-center gap-1.5 truncate"><i class="fa-solid fa-user text-gray-400 text-[11px]"></i>${escapeHtml(t.borrowerName)}</span>
+            ${t.dateBorrow ? `<span class="shrink-0 text-gray-400 text-[11px] font-mono">${escapeHtml(t.dateBorrow)}</span>` : ''}
+          </div>
+        </div>
+      `).join('')}
     </div>`;
 }
 

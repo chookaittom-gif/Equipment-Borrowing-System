@@ -1270,6 +1270,16 @@ body {
   border: 1px solid #f87171;
 }
 
+.recent-trans-mobile-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  word-break: break-word;
+}
+
+.recent-trans-mobile-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
 .table-header {
   background: linear-gradient(90deg, var(--olive-dark) 0%, var(--olive-medium) 100%);
   color: white;
