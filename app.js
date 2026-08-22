@@ -1035,6 +1035,14 @@ function closeQRModal() {
 // ==========================================
 // Cart Logic
 // ==========================================
+function closeCart() {
+  const modal = document.getElementById('cartModal');
+  cartModalOpen = false;
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
+
 function toggleCart() {
   const modal = document.getElementById('cartModal');
   cartModalOpen = !cartModalOpen;
@@ -1302,10 +1310,7 @@ function openBorrowModalFromCart() {
     Swal.fire('ตะกร้าว่างเปล่า', 'กรุณาเลือกอุปกรณ์ที่ต้องการยืมก่อน', 'warning');
     return;
   }
-  const cartDrawer = document.getElementById('cartModal');
-  if (cartDrawer && cartDrawer.classList.contains('open')) {
-    toggleCart();
-  }
+  closeCart();
   const modal = document.getElementById('borrowModal');
   const container = document.getElementById('selectedItemsContainer');
 
