@@ -1072,11 +1072,22 @@ function updateCartBadge() {
   const count = cart.reduce((sum, item) => sum + item.qty, 0);
   const badge = document.getElementById('cartBadge');
   const cartButton = document.getElementById('cartButton');
+  const mobileCartBar = document.getElementById('mobileCartBar');
+  const mobileCartBarBadge = document.getElementById('mobileCartBarBadge');
+  const mobileCartBarCount = document.getElementById('mobileCartBarCount');
+
   if (badge) {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
-  if (cartButton) cartButton.style.display = count > 0 ? 'flex' : 'none';
+  if (cartButton) {
+    cartButton.style.display = count > 0 ? 'flex' : 'none';
+  }
+  if (mobileCartBar) {
+    mobileCartBar.style.display = count > 0 ? 'flex' : 'none';
+    if (mobileCartBarBadge) mobileCartBarBadge.textContent = count;
+    if (mobileCartBarCount) mobileCartBarCount.textContent = count;
+  }
 }
 
 function renderCart() {
@@ -1290,6 +1301,10 @@ function openBorrowModalFromCart() {
   if (cart.length === 0) {
     Swal.fire('ตะกร้าว่างเปล่า', 'กรุณาเลือกอุปกรณ์ที่ต้องการยืมก่อน', 'warning');
     return;
+  }
+  const cartDrawer = document.getElementById('cartModal');
+  if (cartDrawer && cartDrawer.classList.contains('open')) {
+    toggleCart();
   }
   const modal = document.getElementById('borrowModal');
   const container = document.getElementById('selectedItemsContainer');
