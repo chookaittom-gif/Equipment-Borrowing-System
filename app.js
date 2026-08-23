@@ -1516,13 +1516,13 @@ function searchHistory() {
       : '-';
 
     return `
-      <tr>
-        <td class="px-6 py-4">${escapeHtml(item.dateBorrow)}</td>
-        <td class="px-6 py-4 font-semibold">${escapeHtml(item.equipName)}</td>
-        <td class="px-6 py-4 text-center font-bold">${item.qty}</td>
-        <td class="px-6 py-4">${escapeHtml(item.dateReturn)}</td>
-        <td class="px-6 py-4 text-center">${sigCell}</td>
-        <td class="px-6 py-4"><span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span></td>
+      <tr class="table-row">
+        <td class="px-6 py-4" data-label="วันที่ยืม">${escapeHtml(item.dateBorrow)}</td>
+        <td class="px-6 py-4 font-semibold" data-label="อุปกรณ์">${escapeHtml(item.equipName)}</td>
+        <td class="px-6 py-4 text-center font-bold" data-label="จำนวน">${item.qty}</td>
+        <td class="px-6 py-4" data-label="กำหนดคืน">${escapeHtml(item.dateReturn)}</td>
+        <td class="px-6 py-4 text-center" data-label="ลายเซ็น">${sigCell}</td>
+        <td class="px-6 py-4" data-label="สถานะ"><span class="status-badge ${statusClass}">${escapeHtml(item.status)}</span></td>
       </tr>
     `;
   }).join('');
@@ -1914,13 +1914,13 @@ function renderAdminEquipmentTable() {
 
   tbody.innerHTML = pageItems.map(item => `
     <tr class="table-row">
-      <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(item.id)}</td>
-      <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(item.name)}</td>
-      <td class="px-6 py-4"><span class="category-badge">${escapeHtml(getCategoryLabel(item.category))}</span></td>
-      <td class="px-6 py-4">${escapeHtml(item.location || '-')}</td>
-      <td class="px-6 py-4 text-center font-bold">${item.total}</td>
-      <td class="px-6 py-4 text-center font-bold ${Number(item.available) > 0 ? 'text-green-600' : 'text-red-600'}">${item.available}</td>
-      <td class="px-6 py-4 text-center">
+      <td class="px-6 py-4 font-mono font-bold text-sky-800" data-label="รหัส">${escapeHtml(item.id)}</td>
+      <td class="px-6 py-4 font-semibold text-gray-800" data-label="ชื่ออุปกรณ์">${escapeHtml(item.name)}</td>
+      <td class="px-6 py-4" data-label="หมวดหมู่"><span class="category-badge">${escapeHtml(getCategoryLabel(item.category))}</span></td>
+      <td class="px-6 py-4" data-label="สถานที่">${escapeHtml(item.location || '-')}</td>
+      <td class="px-6 py-4 text-center font-bold" data-label="ทั้งหมด">${item.total}</td>
+      <td class="px-6 py-4 text-center font-bold ${Number(item.available) > 0 ? 'text-green-600' : 'text-red-600'}" data-label="คงเหลือ">${item.available}</td>
+      <td class="px-6 py-4 text-center" data-label="จัดการ">
         <div class="table-action-btns">
           <button onclick="openEquipModal('edit', '${escapeHtml(item.id)}')" class="btn-action-edit">
             <i class="fa-solid fa-pen-to-square"></i> แก้ไข
@@ -2631,11 +2631,11 @@ function renderAdminUsersTable() {
   tbody.innerHTML = filtered.map(u => {
     return `
       <tr class="table-row">
-        <td class="px-6 py-4 font-mono font-bold text-sky-800">${escapeHtml(u.userId)}</td>
-        <td class="px-6 py-4 font-semibold text-gray-800">${escapeHtml(u.name)}</td>
-        <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
-        <td class="px-6 py-4 text-gray-500">${escapeHtml(formatThaiDate(u.createdAt, true))}</td>
-        <td class="px-6 py-4 text-center">
+        <td class="px-6 py-4 font-mono font-bold text-sky-800" data-label="ไอดีผู้ใช้งาน">${escapeHtml(u.userId)}</td>
+        <td class="px-6 py-4 font-semibold text-gray-800" data-label="ชื่อ-นามสกุล">${escapeHtml(u.name)}</td>
+        <td class="px-6 py-4" data-label="สิทธิ์การใช้งาน"><span class="px-3 py-1 rounded-full text-xs font-bold ${u.role === 'Super Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(u.role)}</span></td>
+        <td class="px-6 py-4 text-gray-500" data-label="วันที่สร้าง">${escapeHtml(formatThaiDate(u.createdAt, true))}</td>
+        <td class="px-6 py-4 text-center" data-label="จัดการ">
           <div class="table-action-btns">
             <button type="button" onclick="viewUserPasswordHandler('${escapeHtml(u.userId)}')" class="btn-action-view" aria-label="ดูรหัสผ่าน ${escapeHtml(u.userId)}">
               <i class="fa-solid fa-key"></i> รหัส

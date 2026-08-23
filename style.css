@@ -321,6 +321,237 @@ body {
   }
 }
 
+/* Responsive Card View for Admin Equipment Table on Mobile */
+@media (max-width: 768px) {
+  #admin-equipment .admin-table-scroll {
+    overflow-x: visible;
+  }
+
+  #admin-equipment .admin-table-scroll > table,
+  #admin-equipment .admin-table-scroll > table tbody {
+    display: block;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  #admin-equipment .admin-table-scroll > table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #admin-equipment .table-row {
+    display: block;
+    margin-bottom: 14px;
+    border: 1px solid var(--color-rule);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  #admin-equipment .table-row > td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 35%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-rule);
+    text-align: left;
+  }
+
+  #admin-equipment .table-row > td::before {
+    content: attr(data-label);
+    color: var(--olive-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  #admin-equipment .table-row > td:last-child {
+    border-bottom: 0;
+  }
+
+  #admin-equipment .table-row > td[data-label="จัดการ"] {
+    display: block;
+    padding: 12px 14px;
+    background: var(--surface-subtle);
+  }
+
+  #admin-equipment .table-row > td[data-label="จัดการ"]::before {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  #admin-equipment .table-row > td[data-label="จัดการ"] .table-action-btns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  #admin-equipment .table-row > td[data-label="จัดการ"] .btn-action-edit,
+  #admin-equipment .table-row > td[data-label="จัดการ"] .btn-action-delete {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Responsive Card View for Admin Users Table on Mobile */
+@media (max-width: 768px) {
+  #admin-users .overflow-x-auto {
+    overflow-x: visible;
+  }
+
+  #admin-users table,
+  #admin-users table tbody {
+    display: block;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  #admin-users table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #admin-users .table-row {
+    display: block;
+    margin-bottom: 14px;
+    border: 1px solid var(--color-rule);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  #admin-users .table-row > td {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-rule);
+    text-align: left;
+  }
+
+  #admin-users .table-row > td::before {
+    content: attr(data-label);
+    color: var(--olive-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  #admin-users .table-row > td:last-child {
+    border-bottom: 0;
+  }
+
+  #admin-users .table-row > td[data-label="จัดการ"] {
+    display: block;
+    padding: 12px 14px;
+    background: var(--surface-subtle);
+  }
+
+  #admin-users .table-row > td[data-label="จัดการ"]::before {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  #admin-users .table-row > td[data-label="จัดการ"] .table-action-btns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  #admin-users .table-row > td[data-label="จัดการ"] .btn-action-view,
+  #admin-users .table-row > td[data-label="จัดการ"] .btn-action-edit,
+  #admin-users .table-row > td[data-label="จัดการ"] .btn-action-delete {
+    width: 100%;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+}
+
+/* Responsive Card View for User History Table on Mobile */
+@media (max-width: 768px) {
+  #history-section .overflow-x-auto {
+    overflow-x: visible;
+  }
+
+  #history-section table,
+  #history-section table tbody {
+    display: block;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  #history-section table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #history-section .table-row {
+    display: block;
+    margin-bottom: 14px;
+    border: 1px solid var(--color-rule);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  #history-section .table-row > td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 35%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-rule);
+    text-align: left;
+  }
+
+  #history-section .table-row > td::before {
+    content: attr(data-label);
+    color: var(--olive-dark);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  #history-section .table-row > td:last-child {
+    border-bottom: 0;
+  }
+}
+
 .sidebar-header {
   padding: 24px;
   background: linear-gradient(135deg, var(--olive-dark) 0%, var(--olive-medium) 100%);
