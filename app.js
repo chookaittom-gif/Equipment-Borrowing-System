@@ -482,6 +482,35 @@ function toJavaScriptString(value) {
 const EQUIPMENT_IMAGE_FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22250%22 viewBox=%220 0 400 250%22%3E%3Crect width=%22400%22 height=%22250%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2216%22 fill=%22%2394a3b8%22%3E%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%AD%E0%B8%B8%E0%B8%9B%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B9%8C%3C/text%3E%3C/svg%3E";
 
+const SIGNATURE_IMAGE_FALLBACK =
+  "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%2260%22 viewBox=%220 0 160 60%22%3E%3Crect width=%22160%22 height=%2260%22 rx=%226%22 fill=%22%23f8fafc%22 stroke=%22%23cbd5e1%22 stroke-dasharray=%224%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2212%22 fill=%22%2364748b%22%3E%E0%B8%A5%E0%B8%B2%E0%B8%A2%E0%B9%80%E0%B8%8b%E0%B9%87%E0%B8%99%3C/text%3E%3C/svg%3E";
+
+function formatSignatureImageUrl(url, width = 200) {
+  if (!url) return '';
+  const str = String(url).trim();
+  if (str.startsWith('data:image')) return str;
+  const fileIdMatch = str.match(/(?:id=|file\/d\/|\/d\/)([a-zA-Z0-9_-]{25,})/i);
+  if (fileIdMatch) {
+    return `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}=w${width}`;
+  }
+  return str;
+}
+
+function handleSignatureImageError(img) {
+  if (!img) return;
+  const current = img.currentSrc || img.src || '';
+  const fileIdMatch = current.match(/(?:id=|file\/d\/|\/d\/)([a-zA-Z0-9_-]{25,})/i);
+
+  if (fileIdMatch && img.dataset.driveFallbackTried !== 'true') {
+    img.dataset.driveFallbackTried = 'true';
+    img.src = `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w400`;
+    return;
+  }
+
+  img.onerror = null;
+  img.src = SIGNATURE_IMAGE_FALLBACK;
+}
+
 function getLegacyDriveThumbnailUrl(url) {
   const match = String(url || '').match(/https:\/\/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]{25,})=w(\d+)/i);
   return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w${match[2]}` : '';
@@ -1518,8 +1547,9 @@ function searchHistory() {
 
   tbody.innerHTML = matched.map(item => {
     const statusClass = item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending';
+    const formattedSigUrl = formatSignatureImageUrl(item.signatureUrl, 200);
     const sigCell = item.signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(item.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(item.signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(item.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(formattedSigUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer" onerror="handleSignatureImageError(this)"></button>`
       : '-';
 
     return `
@@ -1557,13 +1587,10 @@ function showSignatureDetail(transId, borrower, date, sigUrl) {
   if (borrowerEl) borrowerEl.textContent = borrower || '-';
   if (dateEl) dateEl.textContent = date || '-';
   if (imgEl) {
-    imgEl.onerror = () => {
-      imgEl.onerror = null;
-      imgEl.removeAttribute('src');
-      imgEl.alt = 'ไม่สามารถโหลดรูปภาพลายเซ็นได้';
-    };
+    delete imgEl.dataset.driveFallbackTried;
+    imgEl.onerror = () => handleSignatureImageError(imgEl);
     if (safeUrl) {
-      imgEl.src = safeUrl;
+      imgEl.src = formatSignatureImageUrl(safeUrl, 800);
       imgEl.alt = borrower ? `ลายเซ็นของ ${borrower}` : 'ลายเซ็น';
     } else {
       imgEl.removeAttribute('src');
@@ -2054,8 +2081,9 @@ function renderAdminTransactionsTable() {
   tbody.innerHTML = pageItems.map(g => {
     const statusInfo = getGroupStatusInfo(g.items);
     const totalQty = g.items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
+    const formattedSigUrl = formatSignatureImageUrl(g.signatureUrl, 200);
     const sigCell = g.signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(g.transId)}" data-borrower="${escapeHtml(g.borrowerName)}" data-date="${escapeHtml(g.dateBorrow)}" data-sig-url="${escapeHtml(g.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(g.signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(g.transId)}" data-borrower="${escapeHtml(g.borrowerName)}" data-date="${escapeHtml(g.dateBorrow)}" data-sig-url="${escapeHtml(g.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(formattedSigUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer" onerror="handleSignatureImageError(this)"></button>`
       : '-';
 
     let equipDisplay = '';
@@ -3175,8 +3203,9 @@ function renderReportContent(report) {
 
   const rows = transactions.map((item, index) => {
     const signatureUrl = String(item.signatureUrl || '').trim();
+    const formattedSigUrl = formatSignatureImageUrl(signatureUrl, 200);
     const signatureCell = signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(formattedSigUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer" onerror="handleSignatureImageError(this)"></button>`
       : '-';
 
     return `
