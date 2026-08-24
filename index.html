@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>ระบบยืม-คืนอุปกรณ์</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +14,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js" defer></script>
-  <link rel="stylesheet" href="./style.css?v=20260822-03">
+  <link rel="stylesheet" href="./style.css?v=20260824-01">
   <script>
     window.APP_CONFIG = window.APP_CONFIG || {};
     window.APP_CONFIG.apiUrl = window.APP_CONFIG.apiUrl ||
@@ -21,7 +22,7 @@
     window.APP_CONFIG.frontendUrl = window.APP_CONFIG.frontendUrl ||
       'https://equipment-borrowing-system-seven.vercel.app';
   </script>
-  <script src="./app.js?v=20260822-03" defer></script>
+  <script src="./app.js?v=20260824-01" defer></script>
 </head>
 <body>
   <!-- ==========================================
@@ -609,7 +610,7 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
     <div class="image-zoom-content">
-      <img id="zoomed-image" src="" alt="">
+      <img id="zoomed-image" src="" alt="" referrerpolicy="no-referrer">
       <p id="imageZoomCaption" class="image-zoom-caption"></p>
       <div id="imageZoomGallery" class="imageZoomGallery" hidden role="group" aria-label="แกลอรี่ภาพอุปกรณ์"></div>
     </div>
@@ -647,7 +648,7 @@
         </div>
         <button type="button" class="signature-modal-close" onclick="closeSignatureModal()" aria-label="ปิดภาพลายเซ็น">ปิด</button>
       </div>
-      <img id="sigModalImg" class="signature-modal-image" alt="ลายเซ็นผู้ยืม">
+      <img id="sigModalImg" class="signature-modal-image" alt="ลายเซ็นผู้ยืม" referrerpolicy="no-referrer">
     </div>
   </div>
 
@@ -830,7 +831,7 @@
                 </div>
                 <div id="preview1Container" class="image-preview-card hidden">
                   <div class="preview-img-wrapper">
-                    <img id="preview1" class="image-preview" alt="Preview 1">
+                    <img id="preview1" class="image-preview" alt="Preview 1" referrerpolicy="no-referrer">
                   </div>
                   <button type="button" onclick="removeImage('preview1')" class="btn-remove-image">
                     <i class="fa-solid fa-trash-can"></i> ลบรูปภาพ
@@ -857,7 +858,7 @@
                 </div>
                 <div id="preview2Container" class="image-preview-card hidden">
                   <div class="preview-img-wrapper">
-                    <img id="preview2" class="image-preview" alt="Preview 2">
+                    <img id="preview2" class="image-preview" alt="Preview 2" referrerpolicy="no-referrer">
                   </div>
                   <button type="button" onclick="removeImage('preview2')" class="btn-remove-image">
                     <i class="fa-solid fa-trash-can"></i> ลบรูปภาพ

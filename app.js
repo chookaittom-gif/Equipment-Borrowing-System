@@ -497,6 +497,13 @@ function handleEquipmentImageError(img) {
     return;
   }
 
+  const sampleSrc = img.dataset.sampleSrc;
+  if (sampleSrc && img.dataset.sampleTried !== 'true' && sampleSrc !== (img.currentSrc || img.src)) {
+    img.dataset.sampleTried = 'true';
+    img.src = sampleSrc;
+    return;
+  }
+
   img.onerror = null;
   img.src = EQUIPMENT_IMAGE_FALLBACK;
 }
@@ -715,11 +722,8 @@ function getUploadedEquipmentImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH
   return /^https:\/\/lh3\.googleusercontent\.com\/d\//i.test(formatted) ? formatted : '';
 }
 
-function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
+function getCategorySampleImage(item, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
   if (!item) return '';
-  const formatted1 = formatImageUrl(item.image1, width);
-  if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
-
   const name = (item.name || '').toLowerCase();
   const cat = (item.category || '').toLowerCase();
   let sample = '';
@@ -761,6 +765,13 @@ function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
   return normalizeEquipmentImageWidth(sample, width);
 }
 
+function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
+  if (!item) return '';
+  const formatted1 = formatImageUrl(item.image1, width);
+  if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
+  return getCategorySampleImage(item, width);
+}
+
 function renderEquipmentGrid() {
   const grid = document.getElementById('equipment-grid');
   if (!grid) return;
@@ -790,15 +801,17 @@ function renderEquipmentGrid() {
     const isPriorityImage = index < priorityImageCount;
 
     const catLabel = getCategoryLabel(item.category);
-    const listingImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
-    const fullImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH) || EQUIPMENT_IMAGE_FALLBACK;
+    const sampleCategoryListingImg = getCategorySampleImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH);
+    const sampleCategoryFullImg = getCategorySampleImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
+    const listingImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH) || sampleCategoryListingImg || EQUIPMENT_IMAGE_FALLBACK;
+    const fullImgUrl = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH) || sampleCategoryFullImg || EQUIPMENT_IMAGE_FALLBACK;
     const secondaryFullImgUrl = getUploadedEquipmentImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
 
     return `
       <div class="equipment-card">
         <div class="image-gallery">
           <button type="button" class="equipment-image-trigger" data-src="${escapeHtml(fullImgUrl)}" data-secondary-src="${escapeHtml(secondaryFullImgUrl)}" data-equip-name="${escapeHtml(item.name)}" data-equip-id="${escapeHtml(item.id)}" onclick="openEquipmentImageFromGallery(this)" aria-label="ดูภาพอุปกรณ์ขนาดเต็ม: ${escapeHtml(item.name)}" title="ดูภาพอุปกรณ์ขนาดเต็ม">
-            <img src="${escapeHtml(listingImgUrl)}" alt="${escapeHtml(item.name)}" class="equipment-image" loading="${isPriorityImage ? 'eager' : 'lazy'}" fetchpriority="${isPriorityImage ? 'high' : 'auto'}" decoding="async" onerror="handleEquipmentImageError(this)">
+            <img src="${escapeHtml(listingImgUrl)}" data-sample-src="${escapeHtml(sampleCategoryListingImg)}" referrerpolicy="no-referrer" alt="${escapeHtml(item.name)}" class="equipment-image" loading="${isPriorityImage ? 'eager' : 'lazy'}" fetchpriority="${isPriorityImage ? 'high' : 'auto'}" decoding="async" onerror="handleEquipmentImageError(this)">
           </button>
           <button type="button" class="qr-badge" onclick="event.stopPropagation(); showQRCode('${escapeHtml(item.id)}', '${escapeHtml(item.name)}')" title="ดู QR Code ของ ${escapeHtml(item.name)}" aria-label="ดู QR Code ของ ${escapeHtml(item.name)}">
             <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
@@ -886,7 +899,7 @@ function renderImageZoomGallery() {
     const buttonLabel = `${item.label}: ${equipmentLabel}`;
     return `
       <button type="button" class="imageZoomThumbnail${isActive ? ' isActive' : ''}" onclick="selectImageZoom(${index})" aria-label="${escapeHtml(buttonLabel)}" aria-pressed="${isActive}">
-        <img src="${escapeHtml(item.url)}" alt="" loading="lazy" decoding="async" onerror="handleEquipmentImageError(this)">
+        <img src="${escapeHtml(item.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="handleEquipmentImageError(this)">
         <span>${escapeHtml(item.label)}</span>
       </button>
     `;
@@ -904,6 +917,7 @@ function updateImageZoomFrame() {
   const label = `${equipmentLabel} — ${currentItem.label}`;
   img.src = currentItem.url;
   img.alt = label;
+  img.setAttribute('referrerpolicy', 'no-referrer');
   img.onerror = () => handleEquipmentImageError(img);
   if (caption) caption.textContent = label;
   document.querySelectorAll('#imageZoomGallery .imageZoomThumbnail').forEach((button, index) => {
@@ -1067,7 +1081,14 @@ function addToCart(equipId) {
   if (existing) {
     if (existing.qty < available) existing.qty += 1;
   } else {
-    cart.push({ id: item.id, name: item.name, image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH), qty: 1, maxQty: available });
+    cart.push({
+      id: item.id,
+      name: item.name,
+      image: getSampleEquipmentImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH),
+      sampleImage: getCategorySampleImage(item, EQUIPMENT_IMAGE_LISTING_WIDTH),
+      qty: 1,
+      maxQty: available
+    });
   }
 
   updateCartBadge();
@@ -1115,7 +1136,7 @@ function renderCart() {
     itemsContainer.classList.remove('hidden-section');
     itemsContainer.innerHTML = cart.map(item => `
       <div class="cart-item">
-        <img src="${escapeHtml(item.image || 'https://via.placeholder.com/50')}" alt="${escapeHtml(item.name)}">
+        <img src="${escapeHtml(item.image || item.sampleImage || EQUIPMENT_IMAGE_FALLBACK)}" data-sample-src="${escapeHtml(item.sampleImage || '')}" referrerpolicy="no-referrer" alt="${escapeHtml(item.name)}" onerror="handleEquipmentImageError(this)">
         <div class="cart-item-info">
           <div class="cart-item-name">${escapeHtml(item.name)}</div>
           <div class="cart-item-details">
@@ -1512,7 +1533,7 @@ function searchHistory() {
   tbody.innerHTML = matched.map(item => {
     const statusClass = item.status === 'กำลังยืม' ? 'status-borrowed' : item.status === 'คืนแล้ว' ? 'status-returned' : 'status-pending';
     const sigCell = item.signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(item.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(item.signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(item.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(item.signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
       : '-';
 
     return `
@@ -2048,7 +2069,7 @@ function renderAdminTransactionsTable() {
     const statusInfo = getGroupStatusInfo(g.items);
     const totalQty = g.items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
     const sigCell = g.signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(g.transId)}" data-borrower="${escapeHtml(g.borrowerName)}" data-date="${escapeHtml(g.dateBorrow)}" data-sig-url="${escapeHtml(g.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(g.signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(g.transId)}" data-borrower="${escapeHtml(g.borrowerName)}" data-date="${escapeHtml(g.dateBorrow)}" data-sig-url="${escapeHtml(g.signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(g.signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
       : '-';
 
     let equipDisplay = '';
@@ -2344,6 +2365,8 @@ function openEquipModal(action, equipId = null) {
       preview.src = '';
       preview.onerror = null;
       delete preview.dataset.driveFallbackTried;
+      delete preview.dataset.sampleTried;
+      delete preview.dataset.sampleSrc;
     }
   });
   document.getElementById('image1Url').value = '';
@@ -2385,12 +2408,15 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageTotal').value = item.total;
     document.getElementById('manageAvailable').value = item.available;
 
-    const sampleImg = getSampleEquipmentImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
-    const img1Src = formatImageUrl(item.image1, EQUIPMENT_IMAGE_FULL_WIDTH) || sampleImg;
+    const sampleCategoryImg = getCategorySampleImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
+    const img1Src = formatImageUrl(item.image1, EQUIPMENT_IMAGE_FULL_WIDTH) || sampleCategoryImg;
     if (img1Src) {
       const p1 = document.getElementById('preview1');
       if (p1) {
         p1.dataset.driveFallbackTried = 'false';
+        p1.dataset.sampleTried = 'false';
+        p1.dataset.sampleSrc = sampleCategoryImg;
+        p1.setAttribute('referrerpolicy', 'no-referrer');
         p1.onerror = () => handleEquipmentImageError(p1);
         p1.src = img1Src;
         document.getElementById('preview1Container').classList.remove('hidden');
@@ -2402,6 +2428,8 @@ function openEquipModal(action, equipId = null) {
       const p2 = document.getElementById('preview2');
       if (p2) {
         p2.dataset.driveFallbackTried = 'false';
+        p2.dataset.sampleTried = 'false';
+        p2.setAttribute('referrerpolicy', 'no-referrer');
         p2.onerror = () => handleEquipmentImageError(p2);
         p2.src = img2Src;
         document.getElementById('preview2Container').classList.remove('hidden');
@@ -3153,7 +3181,7 @@ function renderReportContent(report) {
   const rows = transactions.map((item, index) => {
     const signatureUrl = String(item.signatureUrl || '').trim();
     const signatureCell = signatureUrl
-      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็น"></button>`
+      ? `<button type="button" class="signature-button" data-trans-id="${escapeHtml(item.transId)}" data-borrower="${escapeHtml(item.borrowerName)}" data-date="${escapeHtml(item.dateBorrow)}" data-sig-url="${escapeHtml(signatureUrl)}" onclick="showSignatureModalFromData(this)" aria-label="ดูภาพลายเซ็น"><img class="signature" src="${escapeHtml(signatureUrl)}" alt="ลายเซ็น" referrerpolicy="no-referrer"></button>`
       : '-';
 
     return `
