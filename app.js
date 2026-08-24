@@ -722,54 +722,40 @@ function getUploadedEquipmentImageUrl(rawUrl, width = EQUIPMENT_IMAGE_FULL_WIDTH
   return /^https:\/\/lh3\.googleusercontent\.com\/d\//i.test(formatted) ? formatted : '';
 }
 
-function getCategorySampleImage(item, width = EQUIPMENT_IMAGE_FULL_WIDTH) {
-  if (!item) return '';
-  const name = (item.name || '').toLowerCase();
-  const cat = (item.category || '').toLowerCase();
-  let sample = '';
+function getCategoryPlaceholderSvg(category) {
+  const cat = String(category || '').toLowerCase();
+  let bg = '%23f8fafc';
+  let accent = '%2364748b';
+  let icon = '📦';
+  let catText = 'อุปกรณ์ทั่วไป';
 
-  if (name.includes('ฟอกอากาศ') || name.includes('air purifier')) {
-    sample = 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('แม็ค') || name.includes('macbook') || name.includes('mac')) {
-    sample = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('ตั้งโต๊ะ') || name.includes('pc') || name.includes('ชุดคอมพิวเตอร์')) {
-    sample = 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('โน้ตบุ๊ก') || name.includes('notebook') || name.includes('laptop') || name.includes('lenovo')) {
-    sample = 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('กล้อง') || name.includes('cannon') || name.includes('canon') || name.includes('camera')) {
-    sample = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('โปรเจคเตอร์') || name.includes('projector')) {
-    sample = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('เลเซอร์') || name.includes('kress') || name.includes('วัดระดับ')) {
-    sample = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('หม้อ') || name.includes('ต้ม')) {
-    sample = 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('กระทะก้นลึก')) {
-    sample = 'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('กระทะ') || name.includes('สแตนเลส')) {
-    sample = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('กระบวย')) {
-    sample = 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('ตะหลิว')) {
-    sample = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=contain&q=80';
-  } else if (name.includes('ทัพพี')) {
-    sample = 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=contain&q=80';
-  } else if (cat === 'audiovisual') {
-    sample = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=contain&q=80';
+  if (cat === 'audiovisual') {
+    bg = '%23f0f9ff';
+    accent = '%230284c7';
+    icon = '📽️';
+    catText = 'โสตทัศนูปกรณ์ &amp; คอมพิวเตอร์';
   } else if (cat === 'kitchen') {
-    sample = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=contain&q=80';
-  } else {
-    sample = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=contain&q=80';
+    bg = '%23fffbeb';
+    accent = '%23d97706';
+    icon = '🍳';
+    catText = 'ห้องครัว &amp; ประกอบอาหาร';
   }
 
-  return normalizeEquipmentImageWidth(sample, width);
+  return `data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22260%22 viewBox=%220 0 400 260%22%3E%3Crect width=%22400%22 height=%22260%22 fill=%22${bg}%22/%3E%3Ctext x=%2250%25%22 y=%2238%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2248%22%3E${icon}%3C/text%3E%3Ctext x=%2250%25%22 y=%2262%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2213%22 font-weight=%22600%22 fill=%22${accent}%22%3E${catText}%3C/text%3E%3Ctext x=%2250%25%22 y=%2278%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Sarabun%2C%20sans-serif%22 font-size=%2214%22 fill=%22%2394a3b8%22%3Eไม่มีรูปภาพอุปกรณ์%3C/text%3E%3C/svg%3E`;
+}
+
+function getCategorySampleImage(item) {
+  if (!item) return EQUIPMENT_IMAGE_FALLBACK;
+  return getCategoryPlaceholderSvg(item.category);
 }
 
 function getSampleEquipmentImage(item, width = EQUIPMENT_IMAGE_LISTING_WIDTH) {
   if (!item) return '';
   const formatted1 = formatImageUrl(item.image1, width);
-  if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg')) return formatted1;
-  return getCategorySampleImage(item, width);
+  if (formatted1 && formatted1.length > 5 && !formatted1.includes('fallbackSvg') && !formatted1.startsWith('data:image/svg+xml')) {
+    return formatted1;
+  }
+  return getCategoryPlaceholderSvg(item.category);
 }
 
 function renderEquipmentGrid() {
@@ -2408,9 +2394,10 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageTotal').value = item.total;
     document.getElementById('manageAvailable').value = item.available;
 
-    const sampleCategoryImg = getCategorySampleImage(item, EQUIPMENT_IMAGE_FULL_WIDTH);
-    const img1Src = formatImageUrl(item.image1, EQUIPMENT_IMAGE_FULL_WIDTH) || sampleCategoryImg;
-    if (img1Src) {
+    const sampleCategoryImg = getCategorySampleImage(item);
+    const img1Uploaded = getUploadedEquipmentImageUrl(item.image1, EQUIPMENT_IMAGE_FULL_WIDTH)
+      || (item.image1 && item.image1.startsWith('data:image') ? item.image1 : '');
+    if (img1Uploaded) {
       const p1 = document.getElementById('preview1');
       if (p1) {
         p1.dataset.driveFallbackTried = 'false';
@@ -2418,23 +2405,31 @@ function openEquipModal(action, equipId = null) {
         p1.dataset.sampleSrc = sampleCategoryImg;
         p1.setAttribute('referrerpolicy', 'no-referrer');
         p1.onerror = () => handleEquipmentImageError(p1);
-        p1.src = img1Src;
+        p1.src = img1Uploaded;
         document.getElementById('preview1Container').classList.remove('hidden');
       }
       document.getElementById('image1Url').value = item.image1 || '';
+    } else {
+      document.getElementById('preview1Container')?.classList.add('hidden');
+      document.getElementById('image1Url').value = '';
     }
-    const img2Src = getUploadedEquipmentImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH);
-    if (img2Src) {
+
+    const img2Uploaded = getUploadedEquipmentImageUrl(item.image2, EQUIPMENT_IMAGE_FULL_WIDTH)
+      || (item.image2 && item.image2.startsWith('data:image') ? item.image2 : '');
+    if (img2Uploaded) {
       const p2 = document.getElementById('preview2');
       if (p2) {
         p2.dataset.driveFallbackTried = 'false';
         p2.dataset.sampleTried = 'false';
         p2.setAttribute('referrerpolicy', 'no-referrer');
         p2.onerror = () => handleEquipmentImageError(p2);
-        p2.src = img2Src;
+        p2.src = img2Uploaded;
         document.getElementById('preview2Container').classList.remove('hidden');
       }
       document.getElementById('image2Url').value = item.image2 || '';
+    } else {
+      document.getElementById('preview2Container')?.classList.add('hidden');
+      document.getElementById('image2Url').value = '';
     }
   } else {
     title.innerHTML = `<i class="fa-solid fa-plus mr-2"></i>เพิ่มอุปกรณ์ใหม่`;
