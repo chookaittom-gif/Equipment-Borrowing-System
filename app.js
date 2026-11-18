@@ -679,9 +679,7 @@ function renderCategoryFilters() {
 
   const categories = [
     { id: 'all', label: 'ทั้งหมด', icon: 'fa-list' },
-    { id: 'audiovisual', label: 'โสตทัศนูปกรณ์ & คอมพิวเตอร์', icon: 'fa-laptop' },
-    { id: 'kitchen', label: 'ห้องครัว & ประกอบอาหาร', icon: 'fa-utensils' },
-    { id: 'general', label: 'อุปกรณ์ทั่วไป', icon: 'fa-boxes-stacked' }
+    { id: 'kitchen', label: 'ห้องครัว & ประกอบอาหาร', icon: 'fa-utensils' }
   ];
 
   container.innerHTML = categories.map(c => `
@@ -1410,38 +1408,12 @@ function prefillBorrowRoomFromCart() {
   const borrowRoomSelect = document.querySelector('#borrowModal select[name="borrowRoom"]');
   const hintEl = document.getElementById('borrowRoomHint');
   const otherInput = document.getElementById('borrowRoomOther');
-  if (!borrowRoomSelect || cart.length === 0) return;
+  if (!borrowRoomSelect) return;
 
-  const cartIds = cart.map(c => c.id);
-  const matched = equipmentData.filter(e => cartIds.includes(e.id));
-  const locations = [...new Set(matched.map(e => String(e.location || '').trim()).filter(Boolean))];
-
-  const setHint = (show) => {
-    if (!hintEl) return;
-    if (show) hintEl.classList.remove('hidden');
-    else hintEl.classList.add('hidden');
-  };
-
-  if (locations.length !== 1) {
-    borrowRoomSelect.value = '';
-    if (otherInput) otherInput.value = '';
-    toggleBorrowRoomOther(borrowRoomSelect);
-    setHint(locations.length > 1);
-    return;
-  }
-
-  const defaultRoom = locations[0];
-  const optionValues = Array.from(borrowRoomSelect.options).map(o => o.value);
-
-  if (optionValues.includes(defaultRoom)) {
-    borrowRoomSelect.value = defaultRoom;
-    if (otherInput) otherInput.value = '';
-  } else {
-    borrowRoomSelect.value = '__OTHER__';
-    if (otherInput) otherInput.value = defaultRoom;
-  }
+  borrowRoomSelect.value = 'ห้องปฏิบัติการอาหาร';
+  if (otherInput) otherInput.value = '';
   toggleBorrowRoomOther(borrowRoomSelect);
-  setHint(false);
+  if (hintEl) hintEl.classList.add('hidden');
 }
 
 async function handleBorrowSubmit(event) {
@@ -2400,23 +2372,13 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageId').readOnly = false;
     document.getElementById('manageId').placeholder = '';
     document.getElementById('manageName').value = item.name;
-    document.getElementById('manageCategory').value = item.category || 'general';
+    document.getElementById('manageCategory').value = 'kitchen';
     document.getElementById('manageDescription').value = item.description || '';
 
     const locationSelect = document.getElementById('manageLocation');
     const locationOther = document.getElementById('locationOther');
-    const locationValue = String(item.location || '').trim();
-    const knownLocations = Array.from(locationSelect.options).map(o => o.value).filter(v => v && v !== '__OTHER__');
-    if (locationValue && knownLocations.includes(locationValue)) {
-      locationSelect.value = locationValue;
-      if (locationOther) locationOther.value = '';
-    } else if (locationValue) {
-      locationSelect.value = '__OTHER__';
-      if (locationOther) locationOther.value = locationValue;
-    } else {
-      locationSelect.value = '';
-      if (locationOther) locationOther.value = '';
-    }
+    if (locationSelect) locationSelect.value = 'ห้องปฏิบัติการอาหาร';
+    if (locationOther) locationOther.value = '';
     updateStorageLocationOtherVisibility();
 
     document.getElementById('manageTotal').value = item.total;
@@ -2464,6 +2426,14 @@ function openEquipModal(action, equipId = null) {
     document.getElementById('manageOriginalId').value = '';
     document.getElementById('manageId').readOnly = true;
     document.getElementById('manageId').placeholder = 'เลือกหมวดเพื่อสร้างรหัสอัตโนมัติ';
+    const categorySelect = document.getElementById('manageCategory');
+    const locationSelect = document.getElementById('manageLocation');
+    const locationOther = document.getElementById('locationOther');
+    if (categorySelect) categorySelect.value = 'kitchen';
+    if (locationSelect) locationSelect.value = 'ห้องปฏิบัติการอาหาร';
+    if (locationOther) locationOther.value = '';
+    updateStorageLocationOtherVisibility();
+    updateAutoEquipmentId();
   }
 
   modal.classList.remove('hidden');
