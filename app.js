@@ -3131,6 +3131,7 @@ function closeReportView() {
 
   if (reportView) reportView.classList.add('hidden-section');
   if (mainApp) mainApp.classList.remove('hidden-section');
+  document.title = 'ระบบยืม-คืนอุปกรณ์ | สาขาวิชาเทคโนโลยีการประกอบอาหารและการบริการ';
 }
 
 function renderReportContent(report) {
