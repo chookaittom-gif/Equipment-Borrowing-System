@@ -1606,6 +1606,9 @@ function handleAdminAuthorizationError() {
   clearAdminSessionStorage();
   isAdminMode = false;
   currentUser = null;
+  adminUsersData = [];
+  adminUsersLoadedAt = 0;
+  document.getElementById('menu-item-users')?.classList.add('hidden-section');
 
   if (wasAdmin || adminVisible) {
     document.getElementById('admin-sidebar-overlay')?.classList.add('hidden');
@@ -1621,6 +1624,23 @@ function applyAdminSessionUser(user) {
   const roleEl = document.getElementById('admin-user-role');
   if (nameEl) nameEl.textContent = (user && user.name) || '';
   if (roleEl) roleEl.textContent = (user && user.role) || '';
+
+  const isSuperAdmin = Boolean(user && user.role === 'Super Admin');
+  const usersMenuBtn = document.getElementById('menu-item-users');
+  if (usersMenuBtn) {
+    usersMenuBtn.classList.toggle('hidden-section', !isSuperAdmin);
+  }
+  if (!isSuperAdmin) {
+    adminUsersData = [];
+    adminUsersLoadedAt = 0;
+    const usersSection = document.getElementById('admin-users');
+    if (usersSection && !usersSection.classList.contains('hidden-section')) {
+      usersSection.classList.add('hidden-section');
+      usersMenuBtn?.classList.remove('active');
+      document.getElementById('admin-dashboard')?.classList.remove('hidden-section');
+      document.getElementById('menu-item-dashboard')?.classList.add('active');
+    }
+  }
 }
 
 function checkAdminSession() {
@@ -1780,6 +1800,9 @@ async function confirmLogoutAdmin() {
     clearAdminSessionStorage();
     isAdminMode = false;
     currentUser = null;
+    adminUsersData = [];
+    adminUsersLoadedAt = 0;
+    document.getElementById('menu-item-users')?.classList.add('hidden-section');
     switchTab('borrow');
     Swal.fire({ icon: 'success', title: 'ออกจากระบบแล้ว', timer: 1200, showConfirmButton: false });
   } catch (err) {
@@ -1801,6 +1824,10 @@ function toggleAdminSidebar() {
 }
 
 function showAdminSection(sectionName, element) {
+  if (sectionName === 'users' && (!currentUser || currentUser.role !== 'Super Admin')) {
+    sectionName = 'dashboard';
+    element = document.getElementById('menu-item-dashboard');
+  }
   document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden-section'));
   document.querySelectorAll('.sidebar-menu .menu-item').forEach(mi => mi.classList.remove('active'));
 
